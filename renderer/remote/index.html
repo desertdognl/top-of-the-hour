@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top of the Hour — Remote</title>
+    <link rel="stylesheet" href="./remote.css" />
+  </head>
+  <body>
+    <div id="app" class="remote-app" data-view="full">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-name">Top of the <span>Hour</span></div>
+          <div class="brand-meta">
+            <span class="brand-meta__version">remote</span>
+          </div>
+        </div>
+        <div class="match-title">
+          <span id="match-title">Top of the Hour</span>
+          <span class="match-sub">
+            <span class="match-sub-text" id="match-sub">—</span>
+          </span>
+        </div>
+        <div class="controls">
+          <span class="phase-pill" id="phase-label">—</span>
+          <nav class="remote-views" aria-label="View">
+            <button type="button" data-view="full" class="is-active">Volledig</button>
+            <button type="button" data-view="focus">Focus</button>
+            <button type="button" data-view="list">Lijst</button>
+          </nav>
+        </div>
+      </header>
+
+      <div class="timeshift-bar" id="timeshift-bar" hidden>
+        <div class="timeshift-bar-label">
+          <span class="timeshift-pill">Flex</span>
+          <span id="timeshift-label">op schema</span>
+        </div>
+      </div>
+
+      <main class="stage">
+        <section class="panel seconds-panel">
+          <div class="seconds-label">Volgende actie</div>
+          <canvas id="seconds-wheel" width="96" height="96"></canvas>
+          <div class="seconds-digital" id="seconds-digital">—</div>
+          <div class="next-cue-card current-cue-card">
+            <div class="eyebrow">Nu bezig</div>
+            <div class="title" id="current-title">—</div>
+            <div class="meta">
+              <span class="meta-label" id="current-remaining-label">Nog</span>
+              <span class="meta-time" id="current-remaining-time">—</span>
+            </div>
+            <div class="meta dim" id="current-planned"></div>
+          </div>
+          <div class="next-cue-card">
+            <div class="eyebrow">Next</div>
+            <div class="title" id="next-title">—</div>
+            <div class="meta">
+              <span class="meta-label" id="next-meta-label"></span>
+              <span class="meta-time" id="next-meta-time"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel wheel-panel">
+          <canvas id="program-wheel"></canvas>
+          <div class="wheel-center-info">
+            <div class="now-clock" id="center-clock">00:00:00</div>
+            <div class="now-label">Now</div>
+            <div class="current-title" id="center-current">—</div>
+            <div class="current-remaining" id="center-remaining"></div>
+          </div>
+          <div class="window-badge" id="window-badge" hidden>60 min</div>
+        </section>
+
+        <section class="panel list-panel">
+          <div class="list-header" id="list-header" data-phase="pre">
+            <h2>
+              <span class="list-header-label">Timeline</span><span class="list-header-sep">:</span>
+              <span class="list-header-phase" id="list-phase">Voorprogramma</span>
+            </h2>
+            <span id="list-count">0</span>
+          </div>
+          <div class="cue-list" id="cue-list"></div>
+        </section>
+      </main>
+
+      <footer class="status-bar">
+        <span id="conn">verbindt…</span>
+        <span id="mode"></span>
+        <span id="status-now"></span>
+      </footer>
+    </div>
+    <script src="./remote.js"></script>
+  </body>
+</html>

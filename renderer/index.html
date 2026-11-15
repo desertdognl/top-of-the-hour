@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top of the Hour</title>
+    <link rel="stylesheet" href="../src/theme/app.css" />
+  </head>
+  <body>
+    <div id="splash-overlay" class="splash-overlay">
+      <div class="splash-card">
+        <button type="button" class="splash-logo-btn" id="btn-desertdog" title="Open desertdog.nl" aria-label="DesertDog website">
+          <img src="assets/logo_full_white.png" alt="DesertDog" class="splash-logo" />
+        </button>
+        <h1 class="splash-title">Top of the Hour</h1>
+        <div class="splash-divider"></div>
+        <p class="splash-copyright">
+          <button type="button" class="splash-copyright-link" id="btn-desertdog-copy" title="Open desertdog.nl">© DesertDog</button>
+        </p>
+        <p id="splash-version" class="splash-version">v—</p>
+        <p id="splash-dismiss-hint" class="splash-dismiss-hint" hidden>Klik om te sluiten</p>
+      </div>
+    </div>
+
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-name">Top of the <span>Hour</span></div>
+          <div class="brand-meta">
+            <span id="app-version" class="brand-meta__version" title="App-versie">v—</span>
+            <button type="button" id="btn-about" class="brand-meta__copyright" title="Over deze app">© DesertDog</button>
+          </div>
+        </div>
+        <div class="match-title">
+          <span id="match-title">Top of the Hour</span>
+          <span class="match-sub" id="match-sub">
+            <span class="match-sub-text" id="match-sub-text">Laad een speakerformat…</span>
+            <span class="match-sub-tip" id="match-sub-tip" role="tooltip" hidden></span>
+          </span>
+        </div>
+        <div class="controls">
+          <div class="topbar-tools dismissible" id="topbar-tools">
+            <button type="button" class="dismiss-x" data-dismiss="showTopbarTools" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+            <div class="topbar-tools-row">
+              <label class="field">
+                Offset
+                <button class="btn btn-compact" id="offset-minus" type="button" title="-1 min">−</button>
+                <input id="offset-min" type="number" value="0" step="1" />
+                <button class="btn btn-compact" id="offset-plus" type="button" title="+1 min">+</button>
+              </label>
+              <label class="field" title="Verschuift het hele draaiboek zodat aftrap op deze kloktijd valt. Formaat HH:MM, daarna Enter.">
+                Kickoff
+                <input
+                  id="kickoff-override"
+                  type="text"
+                  placeholder="HH:MM"
+                  maxlength="5"
+                  inputmode="numeric"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+          </div>
+          <div class="controls-actions">
+            <div class="open-menu" id="open-menu">
+              <button class="btn btn-icon btn-primary" id="btn-open" type="button" title="Open bestand" aria-label="Open bestand">
+                <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.5 6.5A2.5 2.5 0 0 1 6 4h3.2l1.4 1.6H18a2.5 2.5 0 0 1 2.5 2.5V18A2.5 2.5 0 0 1 18 20.5H6A2.5 2.5 0 0 1 3.5 18V6.5z"/></svg>
+              </button>
+              <div class="open-menu-flyout" role="menu" aria-label="Bestand opties">
+                <button type="button" class="open-menu-item" id="btn-example" role="menuitem">
+                  Voorbeeld laden
+                  <span class="open-menu-item-hint">Ingebouwd speakerformat</span>
+                </button>
+              </div>
+            </div>
+            <button class="btn btn-compact" id="btn-rundown-mode" type="button" title="Draaiboek: vast ↔ flex (onthouden)" aria-pressed="false">
+              Vast
+            </button>
+            <button class="btn btn-icon" id="btn-regie" type="button" title="Regie / fullscreen (F)" aria-label="Regie-modus">
+              <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm12 4v-4h2v6h-6v-2h4z"/></svg>
+            </button>
+            <button class="btn btn-icon" id="btn-settings" type="button" title="Instellingen" aria-label="Instellingen">
+              <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zm8.1 2.9-.9-.3a6.9 6.9 0 0 0-.5-1.3l.5-.8a1 1 0 0 0-.2-1.3l-1.4-1.4a1 1 0 0 0-1.3-.2l-.8.5c-.4-.2-.9-.4-1.3-.5l-.3-.9A1 1 0 0 0 12.8 4h-1.6a1 1 0 0 0-1 .8l-.3.9c-.4.1-.9.3-1.3.5l-.8-.5a1 1 0 0 0-1.3.2L5.1 7.3a1 1 0 0 0-.2 1.3l.5.8c-.2.4-.4.9-.5 1.3l-.9.3a1 1 0 0 0-.8 1v1.6a1 1 0 0 0 .8 1l.9.3c.1.4.3.9.5 1.3l-.5.8a1 1 0 0 0 .2 1.3l1.4 1.4a1 1 0 0 0 1.3.2l.8-.5c.4.2.9.4 1.3.5l.3.9a1 1 0 0 0 1 .8h1.6a1 1 0 0 0 1-.8l.3-.9c.4-.1.9-.3 1.3-.5l.8.5a1 1 0 0 0 1.3-.2l1.4-1.4a1 1 0 0 0 .2-1.3l-.5-.8c.2-.4.4-.9.5-1.3l.9-.3a1 1 0 0 0 .8-1v-1.6a1 1 0 0 0-.8-1z"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="timeshift-bar dismissible" id="timeshift-bar" hidden>
+        <button type="button" class="dismiss-x" data-dismiss="showTimeshiftBar" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+        <div class="timeshift-bar-label">
+          <span class="timeshift-pill">Flex</span>
+          <span id="timeshift-label">op schema</span>
+          <span class="timeshift-hint" id="timeshift-hint">ankers blijven vast</span>
+        </div>
+        <div class="timeshift-bar-group">
+          <button class="btn" data-timeshift="-5" type="button" title="Inlopen 5 min (unlocked eerder)">−5m</button>
+          <button class="btn" data-timeshift="-1" type="button" title="Inlopen 1 min">−1m</button>
+          <button class="btn" data-timeshift="1" type="button" title="Uitlopen 1 min">+1m</button>
+          <button class="btn" data-timeshift="5" type="button" title="Uitlopen 5 min (unlocked later)">+5m</button>
+        </div>
+        <div class="timeshift-bar-group">
+          <button class="btn" data-timeshift-items="-2" type="button" title="Inlopen 2 cues">−2c</button>
+          <button class="btn" data-timeshift-items="-1" type="button" title="Inlopen 1 cue">−1c</button>
+          <button class="btn" data-timeshift-items="1" type="button" title="Uitlopen 1 cue">+1c</button>
+          <button class="btn" data-timeshift-items="2" type="button" title="Uitlopen 2 cues">+2c</button>
+          <button class="btn btn-accent" id="btn-timeshift-reset" type="button">Reset shift</button>
+        </div>
+      </div>
+
+      <div class="demo-bar dismissible" id="demo-bar">
+        <button type="button" class="dismiss-x" data-dismiss="testMode" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+        <div class="demo-bar-label">
+          <span class="demo-pill">Test</span>
+          <span id="demo-offset-label">offset 0</span>
+        </div>
+        <div class="demo-bar-group">
+          <button class="btn btn-accent" id="btn-jump-rundown" type="button" title="Zet klok op 90s vóór eerste cue">
+            Naar rundown
+          </button>
+          <button class="btn" id="btn-jump-anchor" type="button" title="Spring naar volgend anker (locked cue)">
+            Naar anker
+          </button>
+          <button class="btn" data-skip="-15" type="button">−15m</button>
+          <button class="btn" data-skip="-5" type="button">−5m</button>
+          <button class="btn" data-skip="-1" type="button">−1m</button>
+          <button class="btn" data-skip="1" type="button">+1m</button>
+          <button class="btn" data-skip="5" type="button">+5m</button>
+          <button class="btn" data-skip="15" type="button">+15m</button>
+        </div>
+        <div class="demo-bar-group">
+          <span class="demo-caption">Demo play</span>
+          <button class="btn is-active" data-demo-speed="0" type="button">Pause</button>
+          <button class="btn" data-demo-speed="10" type="button" title="10× realtime">10×</button>
+          <button class="btn" data-demo-speed="60" type="button" title="1 minuut per seconde">60×</button>
+          <button class="btn" data-demo-speed="600" type="button" title="10 minuten per seconde">600×</button>
+          <button class="btn" id="btn-demo-reset" type="button">Reset tijd</button>
+        </div>
+      </div>
+
+      <div class="phase-wrap dismissible" id="phase-wrap">
+        <button type="button" class="dismiss-x" data-dismiss="showPhaseBar" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+        <div class="phase-nav-row">
+          <button class="btn btn-compact" id="btn-phase-prev" type="button" title="Vorige fase">&lt; prev</button>
+          <nav class="phase-bar" id="phase-bar" aria-label="Fase-klokken"></nav>
+          <button class="btn btn-compact" id="btn-phase-next" type="button" title="Volgende fase">next &gt;</button>
+        </div>
+        <div class="phase-toolbar">
+        <span class="phase-hint" id="phase-hint">Wall-clock tot aftrap</span>
+        <div class="manual-clock-bar" id="manual-clock-bar" hidden>
+          <span class="manual-status" id="manual-status">niet gestart</span>
+          <span class="manual-elapsed" id="manual-elapsed">0s</span>
+          <button class="btn btn-accent" id="btn-manual-start" type="button">Start</button>
+          <button class="btn" id="btn-manual-pause" type="button">Pauze</button>
+          <button class="btn" id="btn-manual-reset" type="button">Reset</button>
+          <button class="btn" id="btn-manual-prev" type="button">← Item</button>
+          <button class="btn" id="btn-manual-next" type="button">Item →</button>
+          <span class="manual-item" id="manual-item">—</span>
+        </div>
+        </div>
+      </div>
+
+      <div class="match-notice" id="match-notice" hidden>
+        <strong>Wedstrijd — geen aftelklok</strong>
+        <p>
+          De speelduur van een helft is niet vast. Gebruik deze fase voor reminders (wissels, 80e min, …).
+          Ga naar <em>Rust</em> of <em>Na de wedstrijd</em> voor een aparte, handmatig startbare klok.
+        </p>
+      </div>
+
+      <main class="stage">
+        <section class="panel seconds-panel dismissible" id="seconds-panel">
+          <button type="button" class="dismiss-x" data-dismiss="showSecondsPanel" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+          <div class="seconds-label">Volgende actie</div>
+          <canvas id="seconds-wheel" width="96" height="96" style="width: 96px; height: 96px"></canvas>
+          <div class="seconds-digital" id="seconds-digital">—</div>
+          <div class="next-cue-card current-cue-card dismissible" id="current-card">
+            <button type="button" class="dismiss-x" data-dismiss="showCurrentCard" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+            <div class="eyebrow">Nu bezig</div>
+            <div class="title" id="current-title-side">—</div>
+            <div class="meta" id="current-remaining">
+              <span class="meta-label" id="current-remaining-label">Nog</span>
+              <span class="meta-time" id="current-remaining-time">—</span>
+            </div>
+            <div class="meta dim" id="current-planned"></div>
+            <div class="cue-actions" id="cue-actions">
+              <button class="btn btn-small" id="btn-cue-done" type="button" title="Markeer als klaar">Klaar</button>
+              <button class="btn btn-small" id="btn-cue-snooze" type="button" title="Snooze 1 minuut">Snooze +1m</button>
+            </div>
+          </div>
+          <div class="next-cue-card dismissible" id="next-card">
+            <button type="button" class="dismiss-x" data-dismiss="showNextCard" title="Verbergen (Instellingen → weer aanzetten)">×</button>
+            <div class="eyebrow">Next</div>
+            <div class="title" id="next-title">—</div>
+            <div class="meta" id="next-meta">
+              <span class="meta-label" id="next-meta-label"></span>
+              <span class="meta-time" id="next-meta-time"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel wheel-panel">
+          <canvas id="program-wheel"></canvas>
+          <div class="wheel-center-info">
+            <div class="now-clock" id="center-clock">00:00:00</div>
+            <div class="now-label">Now</div>
+            <div class="current-title" id="center-current">—</div>
+            <div class="current-remaining" id="center-remaining"></div>
+          </div>
+          <div class="window-badge" id="window-badge" hidden>60 min</div>
+          <div class="wheel-nav">
+            <button class="btn btn-wheel-nav" id="btn-jump-prev" type="button" title="Ga naar vorig item (als current)">
+              &lt; prev
+            </button>
+            <button class="btn btn-wheel-nav" id="btn-jump-now" type="button" title="Ga naar volgend item (als current)">
+              next &gt;
+            </button>
+          </div>
+        </section>
+
+        <section class="panel list-panel">
+          <div class="list-header" id="list-header" data-phase="pre">
+            <h2>
+              <span class="list-header-label">Timeline</span><span class="list-header-sep">:</span>
+              <span class="list-header-phase" id="list-phase">Voorprogramma</span>
+            </h2>
+            <span id="list-count">0</span>
+          </div>
+          <div class="cue-list" id="cue-list"></div>
+        </section>
+      </main>
+
+      <div class="status-bar">
+        <span id="status-file">geen bestand</span>
+        <span id="status-now"></span>
+      </div>
+    </div>
+
+    <div id="cue-flash" class="cue-flash" aria-hidden="true"></div>
+
+    <div class="settings-page" id="settings-page" hidden>
+      <div class="settings-page-inner">
+        <div class="settings-header">
+          <div>
+            <h2>Instellingen</h2>
+            <p class="settings-sub">Zet onderdelen aan/uit voor meer ruimte op het hoofscherm.</p>
+            <div class="brand-meta settings-brand-meta">
+              <span id="settings-version" class="brand-meta__version">v—</span>
+              <button type="button" id="btn-about-settings" class="brand-meta__copyright">© DesertDog</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-settings-close" type="button">Terug</button>
+        </div>
+
+        <div class="settings-grid">
+          <section class="settings-section">
+            <h3>Draaiboek-modus</h3>
+            <label class="field-block">
+              <span>Modus</span>
+              <select id="setting-rundown-mode">
+                <option value="fixed">Vast (wall-clock)</option>
+                <option value="flex">Flexibel (timeshift)</option>
+              </select>
+            </label>
+            <p class="settings-hint">
+              Flex: unlocked cues schuiven mee bij in-/uitlopen. Locked ankers (slotje) blijven op planningstijd.
+              Dit is iets anders dan de rode Test-offset. Snelle toggle ook in de topbar.
+            </p>
+            <label class="switch-row"><span>Timeshift-balk tonen</span><input type="checkbox" id="setting-show-timeshift-bar" /></label>
+            <label class="field-block">
+              <span>Lookahead (tijd vooruit)</span>
+              <select id="setting-lookahead-minutes">
+                <option value="auto">Auto (uit wiel-window)</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+              </select>
+            </label>
+            <label class="field-block">
+              <span>Lookahead (aantal items)</span>
+              <select id="setting-lookahead-items">
+                <option value="0">Onbeperkt</option>
+                <option value="3">Volgende 3</option>
+                <option value="5">Volgende 5</option>
+                <option value="8">Volgende 8</option>
+                <option value="12">Volgende 12</option>
+              </select>
+            </label>
+            <p class="settings-hint">
+              Tijd bepaalt hoe ver het wiel vooruit kijkt. Aantal items dimt cues verder dan N in de timeline.
+            </p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Schermonderdelen</h3>
+            <label class="switch-row"><span>Testmodus (demo-balk)</span><input type="checkbox" id="setting-test-mode" /></label>
+            <label class="switch-row"><span>Topbar tools (offset / kickoff)</span><input type="checkbox" id="setting-show-topbar-tools" /></label>
+            <label class="switch-row"><span>Fase-tabs</span><input type="checkbox" id="setting-show-phase-bar" /></label>
+            <label class="switch-row"><span>Secondenpaneel links</span><input type="checkbox" id="setting-show-seconds-panel" /></label>
+            <label class="switch-row"><span>Kaart “Nu bezig”</span><input type="checkbox" id="setting-show-current-card" /></label>
+            <label class="switch-row"><span>Kaart “Next”</span><input type="checkbox" id="setting-show-next-card" /></label>
+            <label class="switch-row"><span>Wiel-tickmarks</span><input type="checkbox" id="setting-show-wheel-ticks" /></label>
+            <label class="switch-row"><span>Wiel +15/+30 labels</span><input type="checkbox" id="setting-show-wheel-minute-labels" /></label>
+          </section>
+
+          <section class="settings-section">
+            <h3>Wiel</h3>
+            <label class="field-block">
+              <span>Kleuren</span>
+              <select id="setting-color-mode">
+                <option value="section">Per sectie</option>
+                <option value="multicolor">Multicolor</option>
+                <option value="duo">Duo color</option>
+              </select>
+            </label>
+            <div class="settings-duo-row" id="settings-duo-row" hidden>
+              <label class="field-block"><span>Kleur A</span><input type="color" id="setting-duo-a" /></label>
+              <label class="field-block"><span>Kleur B</span><input type="color" id="setting-duo-b" /></label>
+            </div>
+            <label class="field-block">
+              <span>Venster (zoom)</span>
+              <select id="setting-window-minutes">
+                <option value="30">30 minuten</option>
+                <option value="60">60 minuten</option>
+                <option value="90">90 minuten</option>
+              </select>
+            </label>
+            <label class="field-block">
+              <span>Labelgrootte <em id="setting-label-scale-value">1.00×</em></span>
+              <input type="range" id="setting-label-scale" min="0.85" max="1.4" step="0.05" />
+            </label>
+            <p class="settings-hint">Links blijft klein; rechts loopt de grootte op naar NOW.</p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Secondentimer</h3>
+            <label class="switch-row"><span>Knipperen nabij cue</span><input type="checkbox" id="setting-blink-enabled" /></label>
+            <label class="field-block" id="settings-blink-within-row">
+              <span>Knipper vanaf (seconden)</span>
+              <input type="number" id="setting-blink-within" min="1" max="60" step="1" />
+            </label>
+          </section>
+
+          <section class="settings-section">
+            <h3>Cue-alert</h3>
+            <label class="switch-row"><span>Alert bij cue-wissel</span><input type="checkbox" id="setting-cue-alert" /></label>
+            <label class="switch-row"><span>Geluid</span><input type="checkbox" id="setting-cue-sound" /></label>
+            <label class="field-block">
+              <span>Notification sound</span>
+              <select id="setting-cue-sound-id">
+                <option value="ping">Ping (helder)</option>
+                <option value="double">Dubbele beep</option>
+                <option value="pulse">Pulse (aandacht)</option>
+                <option value="horn">Horn (luid)</option>
+                <option value="chime">Chime (zacht)</option>
+              </select>
+            </label>
+            <div class="settings-btn-row">
+              <button class="btn" id="btn-cue-sound-preview" type="button">Preview geluid</button>
+            </div>
+            <label class="switch-row"><span>Flits op scherm</span><input type="checkbox" id="setting-cue-flash" /></label>
+            <p class="settings-hint">Sneltoetsen: <kbd>D</kbd> klaar · <kbd>S</kbd> snooze · <kbd>A</kbd> volgend anker · <kbd>F</kbd> regie</p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Regie</h3>
+            <label class="switch-row"><span>Timeline verbergen in regie</span><input type="checkbox" id="setting-regie-hide-timeline" /></label>
+            <p class="settings-hint">Alleen wiel + now; ankers blijven als gele dots. Lijst verdwijnt ook als chrome zichtbaar is.</p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Wall-clock ankers</h3>
+            <p class="settings-hint">
+              Vastgezette cues (slotje in de timeline) blijven op planningstijd.
+              Bij een nieuwe import worden ze herkend (via t− / titel) en opnieuw gelockt met de <em>nieuwe</em> tijd.
+            </p>
+            <div id="settings-anchors-list" class="anchors-list"></div>
+            <div class="settings-btn-row">
+              <button class="btn" id="btn-anchors-fcu" type="button" title="−20m, −10m, −4m, aftrap">FCU-set toepassen</button>
+              <button class="btn" id="btn-anchors-clear" type="button">Alle ankers wissen</button>
+            </div>
+            <p class="settings-hint" id="settings-anchors-note"></p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Export</h3>
+            <p class="settings-hint">Exporteer het geladen draaiboek als genormaliseerde cues.</p>
+            <div class="settings-btn-row">
+              <button class="btn" id="btn-export-json" type="button">Export JSON…</button>
+              <button class="btn" id="btn-export-csv" type="button">Export CSV…</button>
+            </div>
+            <p class="settings-hint" id="settings-export-note"></p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Webinterface</h3>
+            <label class="switch-row"><span>Inschakelen (LAN)</span><input type="checkbox" id="setting-web-enabled" /></label>
+            <label class="field-block"><span>Poort</span><input type="number" id="setting-web-port" min="1024" max="65535" /></label>
+            <p class="settings-hint" id="settings-web-note">Browser-view via IP + poort (read-only). Zelfde layout als de app: seconden + wiel + timeline.</p>
+            <div id="settings-web-urls" class="settings-web-urls" hidden></div>
+            <button class="btn" id="btn-web-copy-url" type="button" hidden>Kopieer URL</button>
+          </section>
+
+          <section class="settings-section">
+            <h3>OSC</h3>
+            <label class="switch-row"><span>Inschakelen (luisteren)</span><input type="checkbox" id="setting-osc-enabled" /></label>
+            <label class="field-block"><span>Luister-host</span><input type="text" id="setting-osc-host" /></label>
+            <label class="field-block"><span>Luister-poort</span><input type="number" id="setting-osc-port" min="1024" max="65535" /></label>
+            <label class="switch-row"><span>Status uitzenden</span><input type="checkbox" id="setting-osc-send-enabled" /></label>
+            <label class="field-block"><span>Send-host</span><input type="text" id="setting-osc-send-host" /></label>
+            <label class="field-block"><span>Send-poort</span><input type="number" id="setting-osc-send-port" min="1024" max="65535" /></label>
+            <p class="settings-hint" id="settings-osc-note">UDP OSC. Bij nieuwe app-functies horen altijd OSC-adressen (zie catalogus).</p>
+            <div class="settings-btn-row">
+              <button class="btn btn-primary" id="btn-osc-docs" type="button">OSC-commando’s →</button>
+              <button class="btn" id="btn-osc-export-md" type="button">Export OSC.md…</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="settings-footer">
+          <button class="btn" id="btn-settings-reset" type="button">Herstel standaard</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-page osc-docs-page" id="osc-docs-page" hidden>
+      <div class="settings-page-inner">
+        <div class="settings-header">
+          <div>
+            <h2>OSC-commando’s</h2>
+            <p class="settings-sub">Alle adressen uit de catalogus — synchroon met app-functies.</p>
+            <p class="settings-hint" id="osc-docs-status">OSC-status…</p>
+          </div>
+          <div class="settings-header-actions">
+            <button class="btn" id="btn-osc-docs-back" type="button">← Instellingen</button>
+            <button class="btn btn-primary" id="btn-osc-docs-close" type="button">Terug naar app</button>
+          </div>
+        </div>
+        <div id="osc-docs-list" class="osc-docs-list"></div>
+        <section class="settings-section">
+          <h3>Live log (inkomend)</h3>
+          <div id="osc-docs-log" class="osc-docs-log"></div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="../src/ui/app.js"></script>
+  </body>
+</html>

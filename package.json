@@ -1,0 +1,63 @@
+{
+  "name": "top-of-the-hour",
+  "productName": "Top of the Hour",
+  "version": "1.0.0",
+  "description": "FC Utrecht speakerformat → radio clock wheel (programmawiel)",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "node scripts/write-build-info.js",
+    "start": "electron .",
+    "test:parse": "node scripts/test-parse.js",
+    "test:unit": "node scripts/test-unit.js",
+    "test": "npm run test:unit && npm run test:parse",
+    "prebuild": "node scripts/write-build-info.js",
+    "build": "node scripts/build-mac-app.js",
+    "build:dir": "electron-builder --mac dir --arm64",
+    "build:dmg": "node scripts/write-build-info.js && electron-builder --mac dmg --arm64",
+    "icons": "node scripts/prepare-icons.js"
+  },
+  "author": "DesertDog",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "node-osc": "^9.1.7",
+    "pdfjs-dist": "^4.10.38"
+  },
+  "build": {
+    "appId": "com.fcu.top-of-the-hour",
+    "productName": "Top of the Hour",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "icon": "build/icon.png",
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build-info.json",
+      "VERSION",
+      "renderer/**/*",
+      "src/**/*",
+      "examples/**/*",
+      "scripts/write-build-info.js"
+    ],
+    "extraResources": [],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dir",
+        "dmg"
+      ],
+      "icon": "build/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "TopOfTheHour-macOS-v${version}-${arch}.${ext}"
+    }
+  }
+}

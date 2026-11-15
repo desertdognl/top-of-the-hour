@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build-info.json
+.DS_Store
+*.log
+Top of the Hour.app/
+*.app/

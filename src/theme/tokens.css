@@ -1,0 +1,28 @@
+:root {
+  --bg-deep: #07090c;
+  --bg: #0b0d10;
+  --bg-elevated: #12161c;
+  --bg-panel: #10141a;
+  --stroke: rgba(255, 255, 255, 0.08);
+  --stroke-strong: rgba(255, 255, 255, 0.16);
+  --text: #f2f4f7;
+  --text-dim: #9aa3b2;
+  --text-mute: #6b7380;
+  --fcu-red: #e30613;
+  --fcu-red-soft: rgba(227, 6, 19, 0.22);
+  --accent: #e30613;
+  --accent-glow: rgba(227, 6, 19, 0.45);
+  --good: #3dcf8e;
+  --warn: #f0b429;
+  --time-shifted: #7eb8ff;
+  --wheel-track: rgba(255, 255, 255, 0.06);
+  --wheel-tick: rgba(255, 255, 255, 0.42);
+  --wheel-future: #d8dee8;
+  --wheel-past: rgba(255, 255, 255, 0.28);
+  --now-hand: #ffffff;
+  --font-display: "DIN Condensed", "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+  --radius: 14px;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
