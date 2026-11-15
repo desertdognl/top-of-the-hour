@@ -49,6 +49,7 @@ import {
   findAnchor,
   removeAnchorByKey,
 } from '../settings/anchors.js';
+import { colorForCue } from '../settings/store.js';
 import { createOscBridge, buildOscStatusMessages } from '../osc/bridge.js';
 import { createOscDocsPage } from './oscDocs.js';
 
@@ -417,6 +418,10 @@ function pushWebState(extra = {}) {
   // Compact wheel snapshot so remote can mirror the program wheel
   let wheel = null;
   if (snap?.windowCues && snap.windowMs) {
+    const timed = snap.timed || [];
+    const colorIndexBase = timed.findIndex(
+      (c) => snap.windowCues[0] && c.id === snap.windowCues[0].id
+    );
     wheel = {
       nowMs: snap.nowMs,
       windowMs: snap.windowMs,
@@ -428,15 +433,19 @@ function pushWebState(extra = {}) {
       secondsWheelValue: snap.secondsWheelValue,
       inFinalMinute: Boolean(snap.inFinalMinute),
       endMsById: snap.endMsById || {},
-      cues: (snap.windowCues || []).map((c) => ({
-        id: c.id,
-        title: c.title || '',
-        section: c.section || '',
-        effectiveMs: c.effectiveMs,
-        baseMs: c.baseMs,
-        locked: Boolean(c.locked),
-      })),
-      timed: (snap.timed || []).map((c) => ({
+      cues: (snap.windowCues || []).map((c, i) => {
+        const globalIndex = Math.max(0, colorIndexBase) + i;
+        return {
+          id: c.id,
+          title: c.title || '',
+          section: c.section || '',
+          effectiveMs: c.effectiveMs,
+          baseMs: c.baseMs,
+          locked: Boolean(c.locked),
+          color: colorForCue(c, globalIndex, settings),
+        };
+      }),
+      timed: timed.map((c) => ({
         id: c.id,
         effectiveMs: c.effectiveMs,
       })),
@@ -468,6 +477,16 @@ function pushWebState(extra = {}) {
         : '',
     mode: settings.rundownMode || 'fixed',
     windowMinutes: settings.windowMinutes || 60,
+    theme: {
+      wheelColorMode: settings.wheelColorMode || 'section',
+      duoColorA: settings.duoColorA,
+      duoColorB: settings.duoColorB,
+      wheelLabelScale: settings.wheelLabelScale || 1,
+      showWheelTicks: settings.showWheelTicks !== false,
+      showWheelMinuteLabels: settings.showWheelMinuteLabels !== false,
+      secondsBlinkEnabled: settings.secondsBlinkEnabled !== false,
+      secondsBlinkWithin: Number(settings.secondsBlinkWithin) || 15,
+    },
     cues,
     wheel,
     ...extra,

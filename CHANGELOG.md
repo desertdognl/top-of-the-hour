@@ -7,6 +7,20 @@ Versienummering volgt [Semantic Versioning](https://semver.org/lang/nl/).
 
 > Bij elke wijziging: werk **`CHANGELOG.md`**, **`VERSION`** en **`package.json`** bij.
 
+## [1.0.2] — 2026-11-15
+
+### Gefixt
+- Wiel-kwartieren: labels zijn +15/+30/+45 (hele window), niet meer afgeleid van lookback (+13/+26)
+
+## [1.0.1] — 2026-11-15
+
+### Gefixt / verbeterd — Remote webview
+- Secondentimer toont cijfers in de cirkel (zoals de app)
+- Centrumklok rood + groter; NOW/+Nm labels duidelijker; 5‑min ticks sterker
+- Itemnamen in pie-segmenten; kleuren volgen app-settings (multicolor/duo/sectie)
+- Timeline scrollt mee met current (2e rij); scrollbar verborgen
+- Topbar weg; fase + Flex in één compacte chrome-balk
+
 ## [1.0.0] — 2026-11-15
 
 Eerste publieke release.

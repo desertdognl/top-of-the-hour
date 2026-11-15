@@ -1,9 +1,8 @@
 /**
  * Remote read-only client — mirrors desktop stage (seconds + wheel + timeline).
- * Live state via SSE (/events) with /api/state fallback.
  */
 
-const SECTION_COLORS = {
+const FALLBACK_SECTION = {
   opening: '#2f6fed',
   'warming-up': '#e8a017',
   warming: '#e8a017',
@@ -16,13 +15,11 @@ const SECTION_COLORS = {
 
 const els = {
   app: document.getElementById('app'),
-  matchTitle: document.getElementById('match-title'),
-  matchSub: document.getElementById('match-sub'),
   phaseLabel: document.getElementById('phase-label'),
+  flexChip: document.getElementById('flex-chip'),
+  timeshiftLabel: document.getElementById('timeshift-label'),
   listPhase: document.getElementById('list-phase'),
   listHeader: document.getElementById('list-header'),
-  timeshiftBar: document.getElementById('timeshift-bar'),
-  timeshiftLabel: document.getElementById('timeshift-label'),
   centerClock: document.getElementById('center-clock'),
   centerCurrent: document.getElementById('center-current'),
   centerRemaining: document.getElementById('center-remaining'),
@@ -38,8 +35,6 @@ const els = {
   listCount: document.getElementById('list-count'),
   windowBadge: document.getElementById('window-badge'),
   conn: document.getElementById('conn'),
-  mode: document.getElementById('mode'),
-  statusNow: document.getElementById('status-now'),
   programWheel: document.getElementById('program-wheel'),
   secondsWheel: document.getElementById('seconds-wheel'),
 };
@@ -50,6 +45,7 @@ let view = params.get('view') || hashView || 'full';
 if (!['full', 'focus', 'list'].includes(view)) view = 'full';
 
 let lastState = null;
+let lastScrollId = null;
 
 function setView(next) {
   view = next;
@@ -60,6 +56,7 @@ function setView(next) {
   const url = new URL(location.href);
   url.searchParams.set('view', next);
   history.replaceState(null, '', url);
+  lastScrollId = null;
   requestAnimationFrame(() => {
     resizeProgramWheel();
     drawFromState(lastState);
@@ -85,12 +82,12 @@ function colorForSection(section) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
-  if (!key) return SECTION_COLORS.default;
-  for (const [name, color] of Object.entries(SECTION_COLORS)) {
+  if (!key) return FALLBACK_SECTION.default;
+  for (const [name, color] of Object.entries(FALLBACK_SECTION)) {
     if (name === 'default') continue;
     if (key === name || key.includes(name)) return color;
   }
-  return SECTION_COLORS.default;
+  return FALLBACK_SECTION.default;
 }
 
 function cueAngleRadians(effectiveMs, nowMs, lookbackMs, windowMs) {
@@ -101,13 +98,20 @@ function cueAngleRadians(effectiveMs, nowMs, lookbackMs, windowMs) {
   return -Math.PI / 2 + (clamped / windowMs) * Math.PI * 2;
 }
 
+function normalizeDelta(d) {
+  let x = d;
+  while (x < 0) x += Math.PI * 2;
+  while (x > Math.PI * 2) x -= Math.PI * 2;
+  return x;
+}
+
 function resizeProgramWheel() {
   const canvas = els.programWheel;
   const parent = canvas?.parentElement;
   if (!canvas || !parent) return;
   const raw = Math.min(parent.clientWidth, parent.clientHeight) - 8;
   if (raw < 40) return;
-  const size = Math.max(120, Math.floor(raw));
+  const size = Math.max(140, Math.floor(raw));
   const dpr = window.devicePixelRatio || 1;
   canvas.style.width = `${size}px`;
   canvas.style.height = `${size}px`;
@@ -125,7 +129,7 @@ function resizeSecondsWheel() {
   canvas.style.height = '96px';
 }
 
-function drawSecondsWheel(secondsToNext, inFinalMinute) {
+function drawSecondsWheel(secondsToNext, theme = {}) {
   const canvas = els.secondsWheel;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -133,10 +137,18 @@ function drawSecondsWheel(secondsToNext, inFinalMinute) {
   const h = canvas.height;
   const dpr = window.devicePixelRatio || 1;
   ctx.clearRect(0, 0, w, h);
+
   const cx = w / 2;
   const cy = h / 2;
   const radius = Math.min(w, h) * 0.42;
   const track = Math.max(7 * dpr, radius * 0.12);
+  const blinkEnabled = theme.secondsBlinkEnabled !== false;
+  const blinkWithin = Number(theme.secondsBlinkWithin) || 15;
+  const inBlinkZone =
+    blinkEnabled && secondsToNext != null && secondsToNext <= blinkWithin && secondsToNext >= 0;
+  const blinkOn = !inBlinkZone || Math.floor(Date.now() / 250) % 2 === 0;
+  const inFinalMinute = secondsToNext != null && secondsToNext <= 60;
+  const hot = inFinalMinute || inBlinkZone;
 
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -146,20 +158,51 @@ function drawSecondsWheel(secondsToNext, inFinalMinute) {
   ctx.stroke();
 
   const value = secondsToNext == null ? 0 : secondsToNext > 60 ? 60 : Math.max(0, secondsToNext);
-  const progress = value / 60;
+  const remaining = Math.max(0, Math.min(60, value));
+  const progress = remaining / 60;
   const start = -Math.PI / 2;
   const end = start + progress * Math.PI * 2;
-  const hot = inFinalMinute || (secondsToNext != null && secondsToNext <= 15);
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, start, end);
-  ctx.strokeStyle = hot ? '#e30613' : '#f2f4f7';
-  ctx.lineWidth = track;
-  ctx.lineCap = 'round';
-  ctx.stroke();
+  if (progress > 0.001 && blinkOn) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, start, end, false);
+    ctx.strokeStyle = hot ? '#e30613' : 'rgba(242,244,247,0.75)';
+    ctx.lineWidth = track;
+    ctx.shadowColor = hot ? 'rgba(227,6,19,0.55)' : 'transparent';
+    ctx.shadowBlur = hot ? 14 * dpr : 0;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const a = -Math.PI / 2 + (i / 12) * Math.PI * 2;
+    const inner = radius - track * 0.85;
+    const outer = radius + track * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.stroke();
+  }
+
+  const show = secondsToNext == null ? '—' : String(Math.ceil(remaining)).padStart(2, '0');
+  if (blinkOn) {
+    ctx.fillStyle = hot ? '#e30613' : '#f2f4f7';
+    ctx.font = `600 ${Math.floor(radius * 0.55)}px "IBM Plex Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(show, cx, cy + 2 * dpr);
+  }
+
+  ctx.fillStyle = inBlinkZone && !blinkOn ? 'rgba(227,6,19,0.35)' : 'rgba(154,163,178,0.9)';
+  ctx.font = `500 ${Math.floor(radius * 0.16)}px "Barlow Condensed", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SEC', cx, cy + radius * 0.42);
 }
 
-function drawProgramWheel(wheel) {
+function drawProgramWheel(wheel, theme = {}) {
   const canvas = els.programWheel;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -167,11 +210,14 @@ function drawProgramWheel(wheel) {
   const h = canvas.height;
   if (!w || !h) return;
   const dpr = window.devicePixelRatio || 1;
-  ctx.clearRect(0, 0, w, h);
+  const labelScale = Number(theme.wheelLabelScale) || 1;
+  const showTicks = theme.showWheelTicks !== false;
+  const showMinuteLabels = theme.showWheelMinuteLabels !== false;
 
+  ctx.clearRect(0, 0, w, h);
   const cx = w / 2;
   const cy = h / 2;
-  const outer = Math.min(w, h) * 0.48;
+  const outer = Math.min(w, h) * 0.46;
   const inner = outer * 0.62;
   const midR = (outer + inner) / 2;
   const band = outer - inner;
@@ -184,6 +230,7 @@ function drawProgramWheel(wheel) {
 
   if (!wheel || !wheel.cues?.length) {
     drawNowHand(ctx, cx, cy, inner, outer, dpr);
+    fillCenterDisc(ctx, cx, cy, inner, dpr);
     return;
   }
 
@@ -193,6 +240,7 @@ function drawProgramWheel(wheel) {
   const cues = [...wheel.cues].sort((a, b) => a.effectiveMs - b.effectiveMs);
   const timed = wheel.timed || [];
   const endMsById = wheel.endMsById || {};
+  const segments = [];
 
   for (let i = 0; i < cues.length; i++) {
     const cue = cues[i];
@@ -205,66 +253,115 @@ function drawProgramWheel(wheel) {
     const isCurrent = cue.id === wheel.currentId;
     const isNext = cue.id === wheel.nextId;
     const isPast = !isCurrent && endMs <= nowMs;
-    const color = colorForSection(cue.section);
+    const color = cue.color || colorForSection(cue.section);
 
-    let startMs = cue.effectiveMs;
-    let drawStart = startMs;
+    let drawStart = cue.effectiveMs;
     let drawEnd = endMs;
+    let elapsedStart = null;
     if (isCurrent) {
       drawStart = nowMs;
       drawEnd = Math.max(endMs, nowMs + 90 * 1000);
       if (cue.effectiveMs < nowMs) {
         const elapsedFrom = Math.max(cue.effectiveMs, wheel.windowStart || nowMs - lookbackMs);
-        if (elapsedFrom < nowMs) {
-          pie(ctx, cx, cy, inner, outer,
-            cueAngleRadians(elapsedFrom, nowMs, lookbackMs, windowMs),
-            cueAngleRadians(nowMs, nowMs, lookbackMs, windowMs),
-            color, true, false, false, dpr);
-        }
+        if (elapsedFrom < nowMs) elapsedStart = elapsedFrom;
       }
     }
 
-    pie(ctx, cx, cy, inner, outer,
-      cueAngleRadians(drawStart, nowMs, lookbackMs, windowMs),
-      cueAngleRadians(drawEnd, nowMs, lookbackMs, windowMs),
-      color, isPast, isNext, isCurrent, dpr);
+    if (elapsedStart != null) {
+      pie(
+        ctx,
+        cx,
+        cy,
+        inner,
+        outer,
+        cueAngleRadians(elapsedStart, nowMs, lookbackMs, windowMs),
+        cueAngleRadians(nowMs, nowMs, lookbackMs, windowMs),
+        color,
+        true,
+        false,
+        false,
+        dpr
+      );
+    }
+
+    const startAngle = cueAngleRadians(drawStart, nowMs, lookbackMs, windowMs);
+    const endAngle = cueAngleRadians(drawEnd, nowMs, lookbackMs, windowMs);
+    pie(ctx, cx, cy, inner, outer, startAngle, endAngle, color, isPast, isNext, isCurrent, dpr);
+
+    segments.push({
+      cue,
+      startAngle: isCurrent ? -Math.PI / 2 : startAngle,
+      endAngle,
+      isPast,
+      isNext,
+      isCurrent,
+      minutesAhead: isCurrent ? 0 : (cue.effectiveMs - nowMs) / 60000,
+    });
 
     if (cue.locked) {
-      const markerMs = Math.min(wheel.windowEnd || nowMs + windowMs, Math.max(cue.effectiveMs, wheel.windowStart || nowMs - lookbackMs));
+      const markerMs = Math.min(
+        wheel.windowEnd || nowMs + windowMs,
+        Math.max(cue.effectiveMs, wheel.windowStart || nowMs - lookbackMs)
+      );
       const a = cueAngleRadians(markerMs, nowMs, lookbackMs, windowMs);
-      const r = outer + 9 * dpr;
-      const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r;
-      ctx.beginPath();
-      ctx.arc(x, y, 4.5 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = '#f0b429';
-      ctx.fill();
+      drawAnchor(ctx, cx, cy, outer, a, dpr, isCurrent);
     }
   }
 
-  // Outer track + ticks
-  ctx.beginPath();
-  ctx.arc(cx, cy, outer, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-  ctx.lineWidth = 1.5 * dpr;
-  ctx.stroke();
+  for (const seg of segments) {
+    drawInWheelLabel(ctx, cx, cy, midR, band, seg, dpr, labelScale);
+  }
 
-  const tickCount = Math.min(120, Math.max(30, Math.round(windowMs / 60000)));
-  for (let m = 0; m < tickCount; m++) {
-    const a = -Math.PI / 2 + (m / tickCount) * Math.PI * 2;
-    const major = m % 15 === 0;
-    const mid = m % 5 === 0;
-    const len = (major ? 10 : mid ? 7 : 4) * dpr;
+  if (showTicks) {
+    const tickCount = Math.min(120, Math.max(30, Math.round(windowMs / 60000)));
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * (outer - len), cy + Math.sin(a) * (outer - len));
-    ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
-    ctx.strokeStyle = major ? 'rgba(255,255,255,0.55)' : mid ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = (major ? 2 : 1) * dpr;
+    ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 2 * dpr;
     ctx.stroke();
+
+    for (let m = 0; m < tickCount; m++) {
+      const a = -Math.PI / 2 + (m / tickCount) * Math.PI * 2;
+      const isQuarter = m % Math.max(1, Math.round(tickCount / 4)) === 0;
+      const isMajor = m % 5 === 0;
+      let inward;
+      let outward;
+      let width;
+      let color;
+      if (isQuarter) {
+        inward = 14 * dpr;
+        outward = 8 * dpr;
+        width = 2.6 * dpr;
+        color = 'rgba(255,255,255,0.78)';
+      } else if (isMajor) {
+        inward = 12 * dpr;
+        outward = 6 * dpr;
+        width = 2.2 * dpr;
+        color = 'rgba(255,255,255,0.55)';
+      } else {
+        inward = 6 * dpr;
+        outward = 3 * dpr;
+        width = 1.25 * dpr;
+        color = 'rgba(255,255,255,0.22)';
+      }
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (outer - inward), cy + Math.sin(a) * (outer - inward));
+      ctx.lineTo(cx + Math.cos(a) * (outer + outward), cy + Math.sin(a) * (outer + outward));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+
+    if (showMinuteLabels) {
+      drawWindowLabels(ctx, cx, cy, outer + 22 * dpr, dpr, windowMs);
+    }
   }
 
   drawNowHand(ctx, cx, cy, inner, outer, dpr);
+  fillCenterDisc(ctx, cx, cy, inner, dpr);
+}
 
+function fillCenterDisc(ctx, cx, cy, inner, dpr) {
   ctx.beginPath();
   ctx.arc(cx, cy, inner - 3 * dpr, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(8,10,14,0.78)';
@@ -297,12 +394,144 @@ function drawNowHand(ctx, cx, cy, inner, outer, dpr) {
   ctx.fill();
 }
 
+function drawAnchor(ctx, cx, cy, outer, angle, dpr, isCurrent) {
+  const r = outer + 9 * dpr;
+  const x = cx + Math.cos(angle) * r;
+  const y = cy + Math.sin(angle) * r;
+  const size = (isCurrent ? 5.5 : 4.5) * dpr;
+  ctx.beginPath();
+  ctx.arc(x, y, size + 2 * dpr, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(8,10,14,0.85)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, Math.PI * 2);
+  ctx.fillStyle = '#f0b429';
+  ctx.fill();
+}
+
+function drawWindowLabels(ctx, cx, cy, r, dpr, windowMs) {
+  // Quarters of the full wheel (= windowMs): 60‑min → +15 / +30 / +45.
+  const q = Math.max(1, Math.round(windowMs / 4 / 60000));
+  const labels = [
+    { t: 0, text: 'NOW' },
+    { t: 0.25, text: `+${q}m` },
+    { t: 0.5, text: `+${q * 2}m` },
+    { t: 0.75, text: `+${q * 3}m` },
+  ];
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const lab of labels) {
+    const a = -Math.PI / 2 + lab.t * Math.PI * 2;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    const isNow = lab.t === 0;
+    ctx.font = `${isNow ? 700 : 600} ${(isNow ? 14 : 13) * dpr}px "Barlow Condensed", sans-serif`;
+    ctx.lineWidth = 3.5 * dpr;
+    ctx.strokeStyle = 'rgba(8,10,14,0.85)';
+    ctx.strokeText(lab.text, x, y);
+    ctx.fillStyle = isNow ? '#ff3b46' : 'rgba(232,236,242,0.95)';
+    ctx.fillText(lab.text, x, y);
+  }
+}
+
+function labelSizeForMinutes(minutesAhead, labelScale, dpr) {
+  const scale = labelScale || 1;
+  if (minutesAhead < 0) return Math.round(10 * scale * dpr);
+  if (minutesAhead > 30) return Math.round(10 * scale * dpr);
+  const t = 1 - minutesAhead / 30;
+  let px = 12 + t * 5;
+  if (minutesAhead <= 15) px = Math.max(px, 15);
+  if (minutesAhead <= 10) px = Math.max(px, 16);
+  return Math.round(px * scale * dpr);
+}
+
+function wrapText(ctx, text, fontSize, maxWidth, maxLines) {
+  ctx.font = `600 ${fontSize}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+  const words = String(text).split(/\s+/).filter(Boolean);
+  if (!words.length) return ['—'];
+  const lines = [];
+  let current = words[0];
+  for (let i = 1; i < words.length; i++) {
+    const trial = `${current} ${words[i]}`;
+    if (ctx.measureText(trial).width <= maxWidth) current = trial;
+    else {
+      lines.push(current);
+      current = words[i];
+      if (lines.length >= maxLines) break;
+    }
+  }
+  if (lines.length < maxLines) lines.push(current);
+  let last = lines[lines.length - 1];
+  while (last.length > 1 && ctx.measureText(last).width > maxWidth) {
+    last = `${last.slice(0, -2)}…`;
+  }
+  lines[lines.length - 1] = last;
+  return lines;
+}
+
+function drawInWheelLabel(ctx, cx, cy, midR, band, seg, dpr, labelScale) {
+  const fullSpan = normalizeDelta(seg.endAngle - seg.startAngle);
+  if (fullSpan < 0.035 && seg.minutesAhead > 15) return;
+
+  const labelAngle = seg.startAngle + Math.min(fullSpan, (3 / 60) * Math.PI * 2) * 0.5;
+  const fontSize = labelSizeForMinutes(seg.minutesAhead, labelScale, dpr);
+  const capSpan = (10 * 60 * 1000 / (60 * 60 * 1000)) * Math.PI * 2;
+  const layoutSpan = Math.min(fullSpan, capSpan);
+  const proximityFloor =
+    seg.minutesAhead <= 10 ? 72 * dpr : seg.minutesAhead <= 20 ? 52 * dpr : 28 * dpr;
+  const maxWidth = Math.max(proximityFloor, Math.min(band * 0.9, midR * layoutSpan * 0.7));
+  const maxLines = seg.minutesAhead > 30 ? 1 : 2;
+  const lines = wrapText(ctx, seg.cue.title || 'Cue', fontSize, maxWidth, maxLines);
+
+  ctx.save();
+  ctx.translate(cx + Math.cos(labelAngle) * midR, cy + Math.sin(labelAngle) * midR);
+  let rot = labelAngle;
+  if (labelAngle > Math.PI / 2 || labelAngle < -Math.PI / 2) rot = labelAngle + Math.PI;
+  ctx.rotate(rot);
+  ctx.font = `600 ${fontSize}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const lineH = fontSize * 1.05;
+  const blockH = lines.length * lineH;
+  let blockW = 0;
+  for (const line of lines) blockW = Math.max(blockW, ctx.measureText(line).width);
+  const maxBlockW = Math.min(blockW, band * 1.15);
+  const padX = 5 * dpr;
+  const padY = 3 * dpr;
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  roundRect(ctx, -maxBlockW / 2 - padX, -blockH / 2 - padY, maxBlockW + padX * 2, blockH + padY * 2, 4 * dpr);
+  ctx.fill();
+
+  ctx.fillStyle = seg.isPast
+    ? 'rgba(255,255,255,0.4)'
+    : seg.isNext || seg.isCurrent
+      ? '#ffffff'
+      : 'rgba(255,255,255,0.92)';
+  ctx.beginPath();
+  ctx.rect(-maxBlockW / 2 - padX, -blockH / 2 - padY, maxBlockW + padX * 2, blockH + padY * 2);
+  ctx.clip();
+  lines.forEach((line, i) => {
+    ctx.fillText(line, 0, -blockH / 2 + lineH / 2 + i * lineH);
+  });
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
 function pie(ctx, cx, cy, inner, outer, a0, a1, color, isPast, isNext, isCurrent, dpr) {
   let start = a0;
   let end = a1;
-  let delta = end - start;
-  while (delta < 0) delta += Math.PI * 2;
-  while (delta > Math.PI * 2) delta -= Math.PI * 2;
+  let delta = normalizeDelta(end - start);
   if (delta < 0.01) return;
   end = start + delta;
 
@@ -319,9 +548,15 @@ function pie(ctx, cx, cy, inner, outer, a0, a1, color, isPast, isNext, isCurrent
   ctx.globalAlpha = isPast ? 0.45 : 0.88;
   ctx.fill();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 1 * dpr;
-  ctx.stroke();
+  if (isNext) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2 * dpr;
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1 * dpr;
+    ctx.stroke();
+  }
 }
 
 function shade(hex, factor) {
@@ -329,6 +564,16 @@ function shade(hex, factor) {
   if (!m) return hex;
   const ch = (i) => Math.max(0, Math.min(255, Math.round(parseInt(m[i], 16) * factor)));
   return `rgb(${ch(1)},${ch(2)},${ch(3)})`;
+}
+
+function scrollCueSecondFromTop(root, node) {
+  const prev = node.previousElementSibling;
+  const anchor = prev && root.contains(prev) ? prev : node;
+  const target = Math.max(0, anchor.offsetTop - 4);
+  const maxScroll = Math.max(0, root.scrollHeight - root.clientHeight);
+  const nextTop = Math.min(target, maxScroll);
+  if (Math.abs(root.scrollTop - nextTop) < 2) return;
+  root.scrollTo({ top: nextTop, behavior: 'smooth' });
 }
 
 function applyState(state) {
@@ -339,12 +584,21 @@ function applyState(state) {
 
 function drawFromState(state) {
   if (!state) return;
+  const theme = state.theme || {};
 
-  els.matchTitle.textContent = state.matchTitle || 'Top of the Hour';
-  els.matchSub.textContent = state.matchSub || '—';
   els.phaseLabel.textContent = state.phaseLabel || state.phase || '—';
   els.listPhase.textContent = state.phaseLabel || state.phase || '—';
   if (els.listHeader) els.listHeader.dataset.phase = state.phase || 'pre';
+
+  if (state.timeshiftLabel) {
+    els.flexChip.hidden = false;
+    els.timeshiftLabel.textContent = state.timeshiftLabel;
+  } else if (state.mode === 'flex') {
+    els.flexChip.hidden = false;
+    els.timeshiftLabel.textContent = 'op schema';
+  } else {
+    els.flexChip.hidden = true;
+  }
 
   els.centerClock.textContent = state.nowClock || '—';
   els.centerCurrent.textContent = state.centerCurrent || state.currentTitle || '—';
@@ -360,19 +614,8 @@ function drawFromState(state) {
   els.nextMetaTime.textContent = state.nextMetaTime || '';
 
   const secs = state.secondsToNext;
-  const inFinal = Boolean(state.wheel?.inFinalMinute) || (secs != null && secs <= 60);
   els.secondsDigital.textContent = secs == null ? '—' : formatCountdown(secs);
   els.secondsDigital.classList.toggle('hot', secs != null && secs <= 60);
-
-  if (state.timeshiftLabel) {
-    els.timeshiftBar.hidden = false;
-    els.timeshiftLabel.textContent = state.timeshiftLabel;
-  } else {
-    els.timeshiftBar.hidden = true;
-  }
-
-  els.mode.textContent = state.mode === 'flex' ? 'flex' : 'vast';
-  els.statusNow.textContent = `${state.phaseLabel || state.phase || ''} · ${state.nowClock || ''}`.trim();
 
   const wm = state.windowMinutes || 60;
   if (els.windowBadge) {
@@ -386,6 +629,7 @@ function drawFromState(state) {
   for (const cue of cues) {
     const el = document.createElement('div');
     el.className = 'cue-item';
+    el.dataset.id = cue.id || '';
     if (cue.locked) el.classList.add('is-locked');
     if (cue.id && cue.id === state.currentId) el.classList.add('current');
     else if (cue.id && cue.id === state.nextId) el.classList.add('next');
@@ -403,14 +647,17 @@ function drawFromState(state) {
   }
   els.cueList.replaceChildren(frag);
 
-  const focus = els.cueList.querySelector('.cue-item.current, .cue-item.next');
-  if (focus) {
-    const prev = focus.previousElementSibling;
-    (prev || focus).scrollIntoView({ block: 'nearest' });
+  const focusId = state.currentId || state.nextId;
+  if (focusId && focusId !== lastScrollId) {
+    const node = els.cueList.querySelector(`[data-id="${CSS.escape(focusId)}"]`);
+    if (node) {
+      scrollCueSecondFromTop(els.cueList, node);
+      lastScrollId = focusId;
+    }
   }
 
-  drawSecondsWheel(secs, inFinal);
-  drawProgramWheel(state.wheel);
+  drawSecondsWheel(secs, theme);
+  drawProgramWheel(state.wheel, theme);
 }
 
 function escapeHtml(s) {
@@ -439,7 +686,7 @@ function connectSse() {
       applyState(JSON.parse(ev.data));
       setConn('live', 'is-live');
     } catch {
-      // ignore bad payloads
+      // ignore
     }
   };
   es.onerror = () => {
@@ -462,6 +709,10 @@ async function bootstrap() {
       drawFromState(lastState);
     }).observe(els.programWheel.parentElement);
   }
+  // Keep seconds blink alive between SSE ticks
+  setInterval(() => {
+    if (lastState) drawSecondsWheel(lastState.secondsToNext, lastState.theme || {});
+  }, 250);
 
   try {
     const res = await fetch('/api/state', { cache: 'no-store' });

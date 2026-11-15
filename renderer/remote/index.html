@@ -8,34 +8,19 @@
   </head>
   <body>
     <div id="app" class="remote-app" data-view="full">
-      <header class="topbar">
-        <div class="brand">
-          <div class="brand-name">Top of the <span>Hour</span></div>
-          <div class="brand-meta">
-            <span class="brand-meta__version">remote</span>
-          </div>
-        </div>
-        <div class="match-title">
-          <span id="match-title">Top of the Hour</span>
-          <span class="match-sub">
-            <span class="match-sub-text" id="match-sub">—</span>
-          </span>
-        </div>
-        <div class="controls">
-          <span class="phase-pill" id="phase-label">—</span>
-          <nav class="remote-views" aria-label="View">
-            <button type="button" data-view="full" class="is-active">Volledig</button>
-            <button type="button" data-view="focus">Focus</button>
-            <button type="button" data-view="list">Lijst</button>
-          </nav>
-        </div>
-      </header>
-
-      <div class="timeshift-bar" id="timeshift-bar" hidden>
-        <div class="timeshift-bar-label">
+      <div class="remote-chrome" id="remote-chrome">
+        <span class="phase-chip" id="phase-label">—</span>
+        <span class="flex-chip" id="flex-chip" hidden>
           <span class="timeshift-pill">Flex</span>
           <span id="timeshift-label">op schema</span>
-        </div>
+        </span>
+        <span class="chrome-spacer"></span>
+        <nav class="remote-views" aria-label="View">
+          <button type="button" data-view="full" class="is-active">Volledig</button>
+          <button type="button" data-view="focus">Focus</button>
+          <button type="button" data-view="list">Lijst</button>
+        </nav>
+        <span id="conn" class="conn">verbindt…</span>
       </div>
 
       <main class="stage">
@@ -84,12 +69,6 @@
           <div class="cue-list" id="cue-list"></div>
         </section>
       </main>
-
-      <footer class="status-bar">
-        <span id="conn">verbindt…</span>
-        <span id="mode"></span>
-        <span id="status-now"></span>
-      </footer>
     </div>
     <script src="./remote.js"></script>
   </body>

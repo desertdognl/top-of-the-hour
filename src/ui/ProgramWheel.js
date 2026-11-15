@@ -536,9 +536,9 @@ function drawAnchorMarker(ctx, cx, cy, outer, angle, dpr, isCurrent) {
 
 function drawWindowLabels(ctx, cx, cy, r, dpr, snap) {
   const windowMs = snap?.windowMs || 60 * 60 * 1000;
-  const lookbackMs = snap?.lookbackMs || 10 * 60 * 1000;
-  const aheadMin = Math.round((windowMs - lookbackMs) / 60000);
-  const q = Math.max(1, Math.round(aheadMin / 4));
+  // Quarters of the full wheel (= windowMs), not of the ahead-only arc.
+  // 60‑min window → +15 / +30 / +45 at 3 / 6 / 9 o'clock.
+  const q = Math.max(1, Math.round(windowMs / 4 / 60000));
   const labels = [
     { t: 0, text: 'NOW' },
     { t: 0.25, text: `+${q}m` },
