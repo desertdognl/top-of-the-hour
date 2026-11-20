@@ -140,14 +140,39 @@ function rowsToCues(rows, options = {}) {
     }
 
     let at = null;
+    const fromTMinus =
+      tMinusSeconds != null && kickoffDate
+        ? new Date(kickoffDate.getTime() - tMinusSeconds * 1000)
+        : null;
+    let fromClock = null;
     if (clock) {
-      at = timeOnDay(referenceDate, clock.hours, clock.minutes);
+      fromClock = timeOnDay(referenceDate, clock.hours, clock.minutes);
       // if we have kickoff and this clock is before a morning kickoff after late evening cues — rare; skip
-      if (kickoffDate && at.getTime() < kickoffDate.getTime() - 12 * 3600 * 1000) {
-        at.setDate(at.getDate() + 1);
+      if (kickoffDate && fromClock.getTime() < kickoffDate.getTime() - 12 * 3600 * 1000) {
+        fromClock.setDate(fromClock.getDate() + 1);
       }
-    } else if (tMinusSeconds != null && kickoffDate) {
-      at = new Date(kickoffDate.getTime() - tMinusSeconds * 1000);
+    }
+
+    // Prefer t−+kickoff when clock disagrees (OCR often garbles HH:MM, t− is stabieler)
+    if (fromTMinus && fromClock) {
+      const driftMin = Math.abs(fromTMinus.getTime() - fromClock.getTime()) / 60000;
+      if (driftMin > 2) {
+        at = fromTMinus;
+        clock = {
+          hours: fromTMinus.getHours(),
+          minutes: fromTMinus.getMinutes(),
+        };
+      } else {
+        at = fromClock;
+      }
+    } else {
+      at = fromClock || fromTMinus;
+      if (!clock && fromTMinus) {
+        clock = {
+          hours: fromTMinus.getHours(),
+          minutes: fromTMinus.getMinutes(),
+        };
+      }
     }
 
     const hasContent = Boolean(screens || speaker || relative);

@@ -87,7 +87,7 @@ Browser-view die vanaf andere machines bereikbaar is (LAN), zodat regie/speaker/
 - [x] Normaliseer t−-tekst bij parse (`0h 20 m` → `0h 20m`) voor stabielere anker-keys — v0.9.0
 
 ## Techniek
-- [x] electron-builder DMG (`npm run build:dmg`) — v0.9.2; default build blijft unpacked .app
+- [x] electron-builder DMG (`npm run build:dmg`) — v0.9.2; **standaard**: altijd `npm run build` → `dist/mac-arm64`; DMG + GitHub release alleen op verzoek
 - [ ] Auto-reload in development
 - [x] Unit tests voor normalize + cues + anchor matching — basis v0.9.0 (`npm run test:unit`)
 - [ ] Native SwiftUI-port (als Xcode beschikbaar is)

@@ -33,6 +33,12 @@ test('parseClockTime 18:45', () => {
 test('parseClockTime 18.45 uur', () => {
   assert.deepStrictEqual(parseClockTime('18.45 uur'), { hours: 18, minutes: 45 });
 });
+test('parseClockTime OCR 1 8:45 → 18:45', () => {
+  assert.deepStrictEqual(parseClockTime('1 8:45 uur'), { hours: 18, minutes: 45 });
+});
+test('parseClockTime OCR 1 7:15 → 17:15', () => {
+  assert.deepStrictEqual(parseClockTime('1 7:15 uur'), { hours: 17, minutes: 15 });
+});
 test('parseTMinus 0h 20m', () => {
   assert.strictEqual(parseTMinus('0h 20m'), 20 * 60);
 });

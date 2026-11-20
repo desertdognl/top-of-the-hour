@@ -7,6 +7,12 @@ Versienummering volgt [Semantic Versioning](https://semver.org/lang/nl/).
 
 > Bij elke wijziging: werk **`CHANGELOG.md`**, **`VERSION`** en **`package.json`** bij.
 
+## [1.0.3] — 2026-11-20
+
+### Gefixt — Parsing
+- Kloktijden met OCR-spatie (`1 8:45` → `18:45`); bij conflict wint t−+kickoff (Cambuur-voorbeeld)
+- Standaardvoorbeeld: `examples/11 FC Utrecht - SC Cambuur 2627.docx`
+
 ## [1.0.2] — 2026-11-15
 
 ### Gefixt

@@ -15,11 +15,20 @@ function stripNoise(text) {
 }
 
 /**
- * Parse "18:45", "18.45", "18:45 uur" → { hours, minutes } or null
+ * Parse "18:45", "18.45", "18:45 uur", OCR "1 8:45" / "1 7:15" → { hours, minutes } or null
  */
 function parseClockTime(raw) {
   const text = collapseSpaces(raw);
   if (!text) return null;
+
+  // OCR: hour tens digit split by space — "1 8:45" → 18:45, "0 8:00" → 08:00
+  const spaced = text.match(/\b(\d)\s+(\d)\s*[:.]\s*(\d{2})\b/);
+  if (spaced) {
+    const hours = Number(`${spaced[1]}${spaced[2]}`);
+    const minutes = Number(spaced[3]);
+    if (hours <= 23 && minutes <= 59) return { hours, minutes };
+  }
+
   const m = text.match(/\b(\d{1,2})\s*[:.]\s*(\d{2})\b/);
   if (!m) return null;
   const hours = Number(m[1]);

@@ -8,7 +8,7 @@ const { initOscMain, shutdownOsc } = require('./src/osc/server');
 const { initWebMain, shutdownWeb } = require('./src/web/server');
 
 const BUILD_INFO_PATH = path.join(__dirname, 'build-info.json');
-const EXAMPLE_PATH = path.join(__dirname, 'examples', '02 FCU - AZ 2627.docx');
+const EXAMPLE_PATH = path.join(__dirname, 'examples', '11 FC Utrecht - SC Cambuur 2627.docx');
 
 function readBuildInfo() {
   try {

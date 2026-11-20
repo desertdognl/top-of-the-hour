@@ -5,7 +5,7 @@ const { parseSpeakerFile } = require('../src/parser');
 async function main() {
   const file =
     process.argv[2] ||
-    path.join(__dirname, '..', 'examples', '02 FCU - AZ 2627.docx');
+    path.join(__dirname, '..', 'examples', '11 FC Utrecht - SC Cambuur 2627.docx');
   console.log('Parsing', file);
   const result = await parseSpeakerFile(file);
   console.log('Meta:', result.meta);

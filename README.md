@@ -13,7 +13,7 @@ Radio **programmawiel** voor FC Utrecht wedstrijdregie. Laadt een speakerformat 
 
 Na `npm run build:dmg`:
 
-**`dist/TopOfTheHour-macOS-v1.0.0-arm64.dmg`**
+**`dist/TopOfTheHour-macOS-v1.0.3-arm64.dmg`**
 
 Open de DMG en sleep de app naar Applications.
 
