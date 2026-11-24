@@ -7,6 +7,26 @@ Versienummering volgt [Semantic Versioning](https://semver.org/lang/nl/).
 
 > Bij elke wijziging: werk **`CHANGELOG.md`**, **`VERSION`** en **`package.json`** bij.
 
+## [1.0.5] — 2026-11-24
+
+### Toegevoegd / verbeterd — Typografie & aftel
+- Settings **Lettergrootte**: wiel-labels, timeline-titels, aftelklok-grootte
+- Volgende-item in **centrum van de radio clock** (geel, onder huidige titel; grootte/kleur)
+- “Nog …” aftel in centrum: grootte + positie (boven/onder) instelbaar
+- Aftelklok linksboven duidelijker (alleen seconden)
+- Timeline houdt vorige + huidige cue in beeld
+
+### Toegevoegd — Multi-format import (1.0.4)
+- Automatische format-detectie: **FCU speakerformat** (t−) vs **absolute run-of-show** (Start/Duur/Wat)
+- Absolute parser voor ROS/PDF-achtige draaiboeken
+
+## [1.0.4] — 2026-11-24
+
+### Toegevoegd — Multi-format import
+- Automatische format-detectie: **FCU speakerformat** (t−) vs **absolute run-of-show** (Start/Duur/Wat)
+- Absolute parser voor ROS/PDF-achtige draaiboeken (flexibel bij afwijkende kolommen/OCR)
+- Absolute cues blijven op één wall-clock timeline (fase `pre`)
+
 ## [1.0.3] — 2026-11-20
 
 ### Gefixt — Parsing

@@ -145,6 +145,8 @@ body {
 }
 
 .seconds-panel {
+  --seconds-scale: 1.75;
+  --seconds-size: calc(96px * var(--seconds-scale));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -154,13 +156,13 @@ body {
 }
 
 .seconds-panel #seconds-wheel {
-  width: 96px;
-  height: 96px;
+  width: var(--seconds-size);
+  height: var(--seconds-size);
 }
 
 .seconds-label {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * (0.85 + 0.15 * var(--seconds-scale)));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -168,14 +170,24 @@ body {
 
 .seconds-digital {
   font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-size: calc(22px * var(--seconds-scale));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  line-height: 1;
+  min-height: 1.1em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
 .seconds-digital.hot {
-  color: var(--fcu-red);
-  text-shadow: 0 0 18px var(--accent-glow);
+  color: #ff2a36;
+  text-shadow:
+    0 0 12px rgba(227, 6, 19, 0.75),
+    0 0 28px rgba(227, 6, 19, 0.45);
+}
+
+.seconds-digital.blink {
+  opacity: 0.55;
 }
 
 .next-cue-card {
@@ -235,49 +247,102 @@ body {
 }
 
 .wheel-center-info {
+  --wheel-next-color: #f0b429;
+  --wheel-next-scale: 1;
+  --wheel-remaining-scale: 1;
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(54%, 270px);
+  height: min(54%, 270px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   pointer-events: none;
   text-align: center;
-  padding: 0 16%;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .now-clock {
+  order: 2;
   font-family: var(--font-mono);
-  font-size: clamp(30px, 4.4vw, 46px);
+  font-size: clamp(22px, 3.4vw, 36px);
   font-weight: 500;
   letter-spacing: 0.06em;
   color: var(--fcu-red);
   text-shadow: 0 0 22px var(--accent-glow);
+  flex-shrink: 0;
 }
 
 .now-label {
-  margin-top: 6px;
+  order: 3;
+  margin-top: 0;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-mute);
+  flex-shrink: 0;
 }
 
 .wheel-center-info .current-title {
-  margin-top: 14px;
+  order: 4;
+  margin-top: 6px;
   font-family: var(--font-display);
-  font-size: clamp(16px, 2.2vw, 22px);
+  font-size: clamp(14px, 1.9vw, 20px);
   text-transform: uppercase;
   line-height: 1.15;
-  max-width: 220px;
+  max-width: 100%;
+  flex-shrink: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.wheel-center-info .center-next {
+  order: 5;
+  position: static;
+  left: auto;
+  transform: none;
+  width: 100%;
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: calc(clamp(12px, 1.5vw, 16px) * var(--wheel-next-scale));
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--wheel-next-color);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  max-height: 2.4em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex-shrink: 1;
 }
 
 .wheel-center-info .current-remaining {
-  margin-top: 8px;
+  order: 6;
+  margin-top: 4px;
   font-family: var(--font-mono);
-  font-size: clamp(13px, 1.6vw, 16px);
+  font-size: calc(clamp(13px, 1.7vw, 18px) * var(--wheel-remaining-scale));
+  font-weight: 600;
   color: var(--fcu-red);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.wheel-center-info[data-remaining-pos='top'] .current-remaining {
+  order: 1;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 .window-badge {
@@ -428,7 +493,7 @@ body {
 
 .cue-item .title {
   flex: 1;
-  font-size: 13px;
+  font-size: calc(13px * var(--timeline-title-scale, 1.2));
   font-weight: 500;
 }
 

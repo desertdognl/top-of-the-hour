@@ -9,6 +9,8 @@ const {
   isSectionHeader,
   shortTitle,
 } = require('./normalize');
+const { detectFormat } = require('./detect');
+const { absoluteRowsToCues } = require('./absolute');
 
 /**
  * Build absolute Date for HH:MM on a reference calendar day.
@@ -79,18 +81,35 @@ function extractMatchTitle(rows, colMap) {
 
 /**
  * @param {string[][]} rows
- * @param {{ referenceDate?: Date }} options
+ * @param {{ referenceDate?: Date, format?: 'fcu' | 'absolute' | 'auto' }} options
  */
 function rowsToCues(rows, options = {}) {
   if (!rows || !rows.length) {
-    return { cues: [], meta: { matchTitle: '', kickoff: null, kickoffText: '' } };
+    return { cues: [], meta: { matchTitle: '', kickoff: null, kickoffText: '', format: 'fcu' } };
   }
 
+  const detection =
+    options.format && options.format !== 'auto'
+      ? { format: options.format, confidence: 1, scores: {}, reasons: ['forced'] }
+      : detectFormat(rows);
+
+  if (detection.format === 'absolute') {
+    return absoluteRowsToCues(rows, options, detection);
+  }
+
+  return fcuRowsToCues(rows, options, detection);
+}
+
+function fcuRowsToCues(rows, options = {}, detection = {}) {
   let start = 0;
   let colMap = { tMinus: 0, time: 1, screens: 2, speaker: 3 };
-  if (looksLikeHeaderRow(rows[0])) {
-    colMap = detectColumnMap(rows[0]);
-    start = 1;
+  // Header may not be row 0 (title lines first) — scan first few rows
+  for (let i = 0; i < Math.min(6, rows.length); i++) {
+    if (looksLikeHeaderRow(rows[i])) {
+      colMap = detectColumnMap(rows[i]);
+      start = i + 1;
+      break;
+    }
   }
 
   const body = rows.slice(start);
@@ -226,6 +245,9 @@ function rowsToCues(rows, options = {}) {
       kickoff: kickoffDate ? kickoffDate.toISOString() : null,
       kickoffMs,
       kickoffText,
+      format: 'fcu',
+      formatConfidence: detection.confidence ?? null,
+      formatReasons: detection.reasons || [],
       columnMap: colMap,
       phases: ['pre', 'match', 'rust', 'post'],
     },
@@ -276,6 +298,7 @@ function parseRelativeMatchMarker(raw) {
 
 module.exports = {
   rowsToCues,
+  fcuRowsToCues,
   inferKickoffFromRows,
   extractMatchTitle,
 };

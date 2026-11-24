@@ -83,6 +83,13 @@ export function assignCuePhase(cue, kickoffMs) {
 }
 
 export function tagCuesWithPhases(cues, meta = {}) {
+  // Absolute run-of-show: één wall-clock timeline (alles in pre)
+  if (meta.format === 'absolute') {
+    return (cues || []).map((c) => ({
+      ...c,
+      phase: 'pre',
+    }));
+  }
   const kickoffMs = meta.kickoffMs || null;
   return (cues || []).map((c) => ({
     ...c,

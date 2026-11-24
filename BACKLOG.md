@@ -7,7 +7,7 @@ Ideeën en mogelijke vervolgstappen. Geen commitment; prioriteit bij latere iter
 2. **Timeshift / flexibel draaiboek** — basis in v0.6.0; item-shift / lookahead / toggle / preview in v0.9.4; rest hieronder
 3. **OSC** — basis in v0.7.0 (catalogus + server + docs-pagina); uitbreiden bij elke nieuwe feature
 4. ~~Remote webview~~ — basis in v0.8.0; rest hieronder
-5. **Parsing / editor / tests / DMG** — basis in v0.9.0 (t−-normalize + unit tests); rest hieronder
+5. **Parsing / editor / tests / DMG** — basis in v0.9.0 (t−-normalize + unit tests); multi-format detect + absolute ROS in v1.0.4; rest hieronder
 
 ## Product / UX
 - [x] Halftime / relative clock (RUST, 80e min, 90+1) naast absolute wall-clock — basis in v0.3 (fase-tabs + handmatige rust/post-klok)
@@ -80,6 +80,7 @@ Browser-view die vanaf andere machines bereikbaar is (LAN), zodat regie/speaker/
 - [x] Remote: timeshift-label + ankers op wiel/lijst — v0.9.6
 
 ## Parsing
+- [x] Auto-detect FCU (t−) vs absolute run-of-show (Start/Duur) — v1.0.4
 - [ ] Meer voorbeeldbestanden (licht afwijkende layouts) voor regressietests — later (geen extra files nu)
 - [ ] Manual cue-editor na import (tijd, label, sectie corrigeren)
 - [x] Export genormaliseerde cues als JSON/CSV — v0.9.2

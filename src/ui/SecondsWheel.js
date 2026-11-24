@@ -1,6 +1,6 @@
 /**
- * Seconds countdown wheel — top-left (compact).
- * Last minute fills red; optional blink in final N seconds (settings).
+ * Seconds countdown wheel — top-left.
+ * Last minute fills red; optional soft blink in final N seconds.
  */
 
 export function createSecondsWheel(canvas) {
@@ -50,23 +50,19 @@ export function createSecondsWheel(canvas) {
     const cx = w / 2;
     const cy = h / 2;
     const radius = Math.min(w, h) * 0.42;
-    const track = Math.max(7 * dpr, radius * 0.12);
 
     const blinkEnabled = settings.secondsBlinkEnabled !== false;
     const blinkWithin = Number(settings.secondsBlinkWithin) || 15;
     const secs = snap.secondsToNext;
     const inBlinkZone =
-      blinkEnabled &&
-      secs != null &&
-      secs <= blinkWithin &&
-      secs >= 0;
-    // ~2 Hz blink (on/off every 250ms)
-    const blinkOn = !inBlinkZone || Math.floor(Date.now() / 250) % 2 === 0;
+      blinkEnabled && secs != null && secs <= blinkWithin && secs >= 0;
+    const pulse = !inBlinkZone || Math.floor(Date.now() / 280) % 2 === 0;
+    const hot = Boolean(snap.inFinalMinute) || inBlinkZone;
+    const track = Math.max(8 * dpr, radius * (hot ? 0.17 : 0.13));
 
-    // Track
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.lineWidth = track;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -76,22 +72,21 @@ export function createSecondsWheel(canvas) {
     const progress = remaining / 60;
     const start = -Math.PI / 2;
     const end = start + progress * Math.PI * 2;
+    const color = hot ? '#ff2a36' : 'rgba(242,244,247,0.88)';
 
-    const hot = snap.inFinalMinute || inBlinkZone;
-    const color = hot ? '#e30613' : 'rgba(242,244,247,0.75)';
-
-    if (progress > 0.001 && blinkOn) {
+    if (progress > 0.001) {
       ctx.beginPath();
       ctx.arc(cx, cy, radius, start, end, false);
       ctx.strokeStyle = color;
+      ctx.globalAlpha = inBlinkZone && !pulse ? 0.45 : 1;
       ctx.lineWidth = track;
-      ctx.shadowColor = hot ? 'rgba(227,6,19,0.55)' : 'transparent';
-      ctx.shadowBlur = hot ? 14 * dpr : 0;
+      ctx.shadowColor = hot ? 'rgba(227,6,19,0.7)' : 'transparent';
+      ctx.shadowBlur = hot ? 18 * dpr : 0;
       ctx.stroke();
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     }
 
-    // Tick marks every 5s
     for (let i = 0; i < 12; i++) {
       const a = -Math.PI / 2 + (i / 12) * Math.PI * 2;
       const inner = radius - track * 0.85;
@@ -99,8 +94,8 @@ export function createSecondsWheel(canvas) {
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
       ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-      ctx.lineWidth = 1.5 * dpr;
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = Math.max(1.5, 2 * dpr);
       ctx.stroke();
     }
 
@@ -109,21 +104,23 @@ export function createSecondsWheel(canvas) {
         ? '—'
         : String(Math.ceil(remaining)).padStart(2, '0');
 
-    if (blinkOn) {
-      ctx.fillStyle = hot ? '#e30613' : '#f2f4f7';
-      ctx.font = `600 ${Math.floor(radius * 0.55)}px "IBM Plex Mono", monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(show, cx, cy + 2 * dpr);
-    }
-
-    ctx.fillStyle = inBlinkZone && !blinkOn ? 'rgba(227,6,19,0.35)' : 'rgba(154,163,178,0.9)';
-    ctx.font = `500 ${Math.floor(radius * 0.16)}px "Barlow Condensed", sans-serif`;
+    const digitSize = Math.floor(radius * 0.62);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.font = `700 ${digitSize}px "IBM Plex Mono", monospace`;
+    ctx.globalAlpha = inBlinkZone && !pulse ? 0.5 : 1;
+    ctx.lineWidth = Math.max(3, 4 * dpr);
+    ctx.strokeStyle = 'rgba(8,10,14,0.85)';
+    ctx.strokeText(show, cx, cy);
+    ctx.fillStyle = hot ? '#ff2a36' : '#ffffff';
+    ctx.fillText(show, cx, cy);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = hot ? 'rgba(255,80,90,0.85)' : 'rgba(180,188,200,0.95)';
+    ctx.font = `600 ${Math.floor(radius * 0.15)}px "Barlow Condensed", sans-serif`;
     ctx.fillText('SEC', cx, cy + radius * 0.42);
 
-    return { blinking: inBlinkZone && blinkOn, inBlinkZone };
+    return { blinking: inBlinkZone && pulse, inBlinkZone };
   }
 
   return { resize, draw };

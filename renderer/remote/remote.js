@@ -23,6 +23,8 @@ const els = {
   centerClock: document.getElementById('center-clock'),
   centerCurrent: document.getElementById('center-current'),
   centerRemaining: document.getElementById('center-remaining'),
+  centerNext: document.getElementById('center-next'),
+  wheelCenterInfo: document.getElementById('wheel-center-info'),
   currentTitle: document.getElementById('current-title'),
   currentRemainingLabel: document.getElementById('current-remaining-label'),
   currentRemainingTime: document.getElementById('current-remaining-time'),
@@ -46,6 +48,7 @@ if (!['full', 'focus', 'list'].includes(view)) view = 'full';
 
 let lastState = null;
 let lastScrollId = null;
+let lastListStructure = '';
 
 function setView(next) {
   view = next;
@@ -122,11 +125,14 @@ function resizeProgramWheel() {
 function resizeSecondsWheel() {
   const canvas = els.secondsWheel;
   if (!canvas) return;
+  const theme = lastState?.theme || {};
+  const scale = Number(theme.secondsScale) || 1.75;
+  const size = Math.round(96 * scale);
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.floor(96 * dpr);
-  canvas.height = Math.floor(96 * dpr);
-  canvas.style.width = '96px';
-  canvas.style.height = '96px';
+  canvas.width = Math.floor(size * dpr);
+  canvas.height = Math.floor(size * dpr);
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
 }
 
 function drawSecondsWheel(secondsToNext, theme = {}) {
@@ -141,19 +147,19 @@ function drawSecondsWheel(secondsToNext, theme = {}) {
   const cx = w / 2;
   const cy = h / 2;
   const radius = Math.min(w, h) * 0.42;
-  const track = Math.max(7 * dpr, radius * 0.12);
   const blinkEnabled = theme.secondsBlinkEnabled !== false;
   const blinkWithin = Number(theme.secondsBlinkWithin) || 15;
   const inBlinkZone =
     blinkEnabled && secondsToNext != null && secondsToNext <= blinkWithin && secondsToNext >= 0;
-  const blinkOn = !inBlinkZone || Math.floor(Date.now() / 250) % 2 === 0;
+  const pulse = !inBlinkZone || Math.floor(Date.now() / 280) % 2 === 0;
   const inFinalMinute = secondsToNext != null && secondsToNext <= 60;
   const hot = inFinalMinute || inBlinkZone;
+  const trackHot = Math.max(8 * dpr, radius * (hot ? 0.17 : 0.13));
 
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = track;
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = trackHot;
   ctx.lineCap = 'round';
   ctx.stroke();
 
@@ -163,42 +169,45 @@ function drawSecondsWheel(secondsToNext, theme = {}) {
   const start = -Math.PI / 2;
   const end = start + progress * Math.PI * 2;
 
-  if (progress > 0.001 && blinkOn) {
+  if (progress > 0.001) {
     ctx.beginPath();
     ctx.arc(cx, cy, radius, start, end, false);
-    ctx.strokeStyle = hot ? '#e30613' : 'rgba(242,244,247,0.75)';
-    ctx.lineWidth = track;
-    ctx.shadowColor = hot ? 'rgba(227,6,19,0.55)' : 'transparent';
-    ctx.shadowBlur = hot ? 14 * dpr : 0;
+    ctx.strokeStyle = hot ? '#ff2a36' : 'rgba(242,244,247,0.88)';
+    ctx.globalAlpha = inBlinkZone && !pulse ? 0.45 : 1;
+    ctx.lineWidth = trackHot;
+    ctx.shadowColor = hot ? 'rgba(227,6,19,0.7)' : 'transparent';
+    ctx.shadowBlur = hot ? 18 * dpr : 0;
     ctx.stroke();
     ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
   }
 
   for (let i = 0; i < 12; i++) {
     const a = -Math.PI / 2 + (i / 12) * Math.PI * 2;
-    const inner = radius - track * 0.85;
-    const outer = radius + track * 0.55;
+    const inner = radius - trackHot * 0.85;
+    const outer = radius + trackHot * 0.55;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
     ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = Math.max(1.5, 2 * dpr);
     ctx.stroke();
   }
 
   const show = secondsToNext == null ? '—' : String(Math.ceil(remaining)).padStart(2, '0');
-  if (blinkOn) {
-    ctx.fillStyle = hot ? '#e30613' : '#f2f4f7';
-    ctx.font = `600 ${Math.floor(radius * 0.55)}px "IBM Plex Mono", monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(show, cx, cy + 2 * dpr);
-  }
-
-  ctx.fillStyle = inBlinkZone && !blinkOn ? 'rgba(227,6,19,0.35)' : 'rgba(154,163,178,0.9)';
-  ctx.font = `500 ${Math.floor(radius * 0.16)}px "Barlow Condensed", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.floor(radius * 0.62)}px "IBM Plex Mono", monospace`;
+  ctx.globalAlpha = inBlinkZone && !pulse ? 0.5 : 1;
+  ctx.lineWidth = Math.max(3, 4 * dpr);
+  ctx.strokeStyle = 'rgba(8,10,14,0.85)';
+  ctx.strokeText(show, cx, cy);
+  ctx.fillStyle = hot ? '#ff2a36' : '#ffffff';
+  ctx.fillText(show, cx, cy);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = hot ? 'rgba(255,80,90,0.85)' : 'rgba(180,188,200,0.95)';
+  ctx.font = `600 ${Math.floor(radius * 0.15)}px "Barlow Condensed", sans-serif`;
   ctx.fillText('SEC', cx, cy + radius * 0.42);
 }
 
@@ -436,12 +445,12 @@ function drawWindowLabels(ctx, cx, cy, r, dpr, windowMs) {
 
 function labelSizeForMinutes(minutesAhead, labelScale, dpr) {
   const scale = labelScale || 1;
-  if (minutesAhead < 0) return Math.round(10 * scale * dpr);
-  if (minutesAhead > 30) return Math.round(10 * scale * dpr);
+  if (minutesAhead < 0) return Math.round(12 * scale * dpr);
+  if (minutesAhead > 30) return Math.round(12 * scale * dpr);
   const t = 1 - minutesAhead / 30;
-  let px = 12 + t * 5;
-  if (minutesAhead <= 15) px = Math.max(px, 15);
-  if (minutesAhead <= 10) px = Math.max(px, 16);
+  let px = 14 + t * 7;
+  if (minutesAhead <= 15) px = Math.max(px, 18);
+  if (minutesAhead <= 10) px = Math.max(px, 20);
   return Math.round(px * scale * dpr);
 }
 
@@ -566,14 +575,28 @@ function shade(hex, factor) {
   return `rgb(${ch(1)},${ch(2)},${ch(3)})`;
 }
 
-function scrollCueSecondFromTop(root, node) {
-  const prev = node.previousElementSibling;
-  const anchor = prev && root.contains(prev) ? prev : node;
-  const target = Math.max(0, anchor.offsetTop - 4);
+function contentOffsetTop(root, el) {
+  const er = el.getBoundingClientRect();
+  const rr = root.getBoundingClientRect();
+  return er.top - rr.top + root.scrollTop;
+}
+
+function ensurePrevAndCurrentVisible(root, currentNode, { smooth = true } = {}) {
+  if (!root || !currentNode) return;
+  const prev =
+    currentNode.previousElementSibling && root.contains(currentNode.previousElementSibling)
+      ? currentNode.previousElementSibling
+      : null;
+  const pad = 4;
   const maxScroll = Math.max(0, root.scrollHeight - root.clientHeight);
-  const nextTop = Math.min(target, maxScroll);
+  const topNode = prev || currentNode;
+  const topY = contentOffsetTop(root, topNode) - pad;
+  const curBottom = contentOffsetTop(root, currentNode) + currentNode.offsetHeight + pad;
+  const span = curBottom - topY;
+  let nextTop = span <= root.clientHeight ? topY : curBottom - root.clientHeight;
+  nextTop = Math.max(0, Math.min(nextTop, maxScroll));
   if (Math.abs(root.scrollTop - nextTop) < 2) return;
-  root.scrollTo({ top: nextTop, behavior: 'smooth' });
+  root.scrollTo({ top: nextTop, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 function applyState(state) {
@@ -603,6 +626,12 @@ function drawFromState(state) {
   els.centerClock.textContent = state.nowClock || '—';
   els.centerCurrent.textContent = state.centerCurrent || state.currentTitle || '—';
   els.centerRemaining.textContent = state.centerRemaining || '';
+  if (els.centerNext) {
+    const enabled = theme.wheelNextTitleEnabled !== false;
+    const nextText = enabled ? String(state.nextTitle || '').trim() : '';
+    els.centerNext.textContent = nextText;
+    els.centerNext.hidden = !nextText;
+  }
 
   els.currentTitle.textContent = state.currentTitle || '—';
   els.currentRemainingLabel.textContent = state.currentRemainingLabel || 'Nog';
@@ -625,16 +654,17 @@ function drawFromState(state) {
 
   const cues = Array.isArray(state.cues) ? state.cues : [];
   els.listCount.textContent = String(cues.length);
-  const frag = document.createDocumentFragment();
-  for (const cue of cues) {
-    const el = document.createElement('div');
-    el.className = 'cue-item';
-    el.dataset.id = cue.id || '';
-    if (cue.locked) el.classList.add('is-locked');
-    if (cue.id && cue.id === state.currentId) el.classList.add('current');
-    else if (cue.id && cue.id === state.nextId) el.classList.add('next');
-    else if (cue.past) el.classList.add('past');
-    el.innerHTML = `
+  const structure = cues
+    .map((c) => `${c.id}|${c.title}|${c.clock}|${c.kind}|${c.section || ''}|${c.locked ? 1 : 0}`)
+    .join('\n');
+  const rebuilt = structure !== lastListStructure;
+  if (rebuilt) {
+    const frag = document.createDocumentFragment();
+    for (const cue of cues) {
+      const el = document.createElement('div');
+      el.className = 'cue-item';
+      el.dataset.id = cue.id || '';
+      el.innerHTML = `
       <div class="row">
         <span class="cue-lock" aria-hidden="true">${cue.locked ? lockSvg() : ''}</span>
         <span class="time${cue.shifted ? ' is-shifted' : ''}">${escapeHtml(cue.clock || '—')}</span>
@@ -643,21 +673,66 @@ function drawFromState(state) {
       </div>
       ${cue.section ? `<div class="section">${escapeHtml(cue.section)}</div>` : ''}
     `;
-    frag.appendChild(el);
+      frag.appendChild(el);
+    }
+    els.cueList.replaceChildren(frag);
+    lastListStructure = structure;
+    lastScrollId = null;
   }
-  els.cueList.replaceChildren(frag);
+
+  for (const el of els.cueList.querySelectorAll('.cue-item')) {
+    const id = el.dataset.id;
+    el.classList.toggle('is-locked', Boolean(cues.find((c) => c.id === id)?.locked));
+    el.classList.toggle('current', Boolean(id && id === state.currentId));
+    el.classList.toggle('next', Boolean(id && id === state.nextId && id !== state.currentId));
+    el.classList.toggle(
+      'past',
+      Boolean(cues.find((c) => c.id === id)?.past) && id !== state.currentId && id !== state.nextId
+    );
+  }
+
+  applyThemeScales(theme);
 
   const focusId = state.currentId || state.nextId;
-  if (focusId && focusId !== lastScrollId) {
+  if (focusId) {
     const node = els.cueList.querySelector(`[data-id="${CSS.escape(focusId)}"]`);
     if (node) {
-      scrollCueSecondFromTop(els.cueList, node);
+      const force = rebuilt || focusId !== lastScrollId;
+      requestAnimationFrame(() => {
+        ensurePrevAndCurrentVisible(els.cueList, node, { smooth: force && !rebuilt });
+      });
       lastScrollId = focusId;
     }
   }
 
   drawSecondsWheel(secs, theme);
   drawProgramWheel(state.wheel, theme);
+}
+
+function applyThemeScales(theme = {}) {
+  const root = document.querySelector('.remote-app') || document.documentElement;
+  const secondsScale = Number(theme.secondsScale) || 1.75;
+  const timelineTitleScale = Number(theme.timelineTitleScale) || 1.2;
+  const nextScale = Number(theme.wheelNextTitleScale) || 1;
+  const nextColor = theme.wheelNextTitleColor || '#f0b429';
+  const remainingScale = Number(theme.wheelRemainingScale) || 1;
+  const remainingPos = theme.wheelRemainingPosition === 'top' ? 'top' : 'bottom';
+  root.style.setProperty('--seconds-scale', String(secondsScale));
+  root.style.setProperty('--timeline-title-scale', String(timelineTitleScale));
+  if (els.wheelCenterInfo) {
+    els.wheelCenterInfo.style.setProperty('--wheel-next-scale', String(nextScale));
+    els.wheelCenterInfo.style.setProperty('--wheel-next-color', nextColor);
+    els.wheelCenterInfo.style.setProperty('--wheel-remaining-scale', String(remainingScale));
+    els.wheelCenterInfo.dataset.remainingPos = remainingPos;
+  }
+  const size = Math.round(96 * secondsScale);
+  if (els.secondsWheel) {
+    const dpr = window.devicePixelRatio || 1;
+    els.secondsWheel.style.width = `${size}px`;
+    els.secondsWheel.style.height = `${size}px`;
+    els.secondsWheel.width = Math.floor(size * dpr);
+    els.secondsWheel.height = Math.floor(size * dpr);
+  }
 }
 
 function escapeHtml(s) {

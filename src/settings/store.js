@@ -32,7 +32,20 @@ export const DEFAULT_SETTINGS = {
   wheelColorMode: 'section',
   duoColorA: '#e30613',
   duoColorB: '#2a3340',
-  wheelLabelScale: 1,
+  /** Pie-item labels in het programmawiel (1 = basis; hoger = groter) */
+  wheelLabelScale: 1.2,
+  /** Timeline-itemtitels (1 = 13px basis) */
+  timelineTitleScale: 1.2,
+  /** Secondentimer linksboven (1 ≈ 96px; hoger = groter) */
+  secondsScale: 1.75,
+  /** Volgende-item in het centrum van het programmawiel (radio clock) */
+  wheelNextTitleEnabled: true,
+  wheelNextTitleColor: '#f0b429',
+  wheelNextTitleScale: 1,
+  /** “nog Xm Ys” in het wiel-centrum */
+  wheelRemainingScale: 1,
+  /** 'top' | 'bottom' — positie van de aftel in de center disc */
+  wheelRemainingPosition: 'bottom',
   windowMinutes: 60,
   secondsBlinkEnabled: true,
   secondsBlinkWithin: 15,
@@ -91,7 +104,24 @@ export function loadSettings() {
       }
       return { ...DEFAULT_SETTINGS };
     }
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // Migrate oude keys (1.0.5 early: next-title zat per abuis op de secondenklok)
+    if (parsed.secondsNextTitleEnabled != null && parsed.wheelNextTitleEnabled == null) {
+      parsed.wheelNextTitleEnabled = parsed.secondsNextTitleEnabled;
+    }
+    if (parsed.secondsNextTitleColor && !parsed.wheelNextTitleColor) {
+      parsed.wheelNextTitleColor = parsed.secondsNextTitleColor;
+    }
+    if (parsed.secondsNextTitleScale != null && parsed.wheelNextTitleScale == null) {
+      parsed.wheelNextTitleScale = parsed.secondsNextTitleScale;
+    }
+    if (parsed.secondsNextTitlePosition && !parsed.wheelRemainingPosition) {
+      parsed.wheelRemainingPosition = parsed.secondsNextTitlePosition;
+    }
+    if (parsed.wheelNextTitlePosition && !parsed.wheelRemainingPosition) {
+      parsed.wheelRemainingPosition = parsed.wheelNextTitlePosition;
+    }
+    return { ...DEFAULT_SETTINGS, ...parsed };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

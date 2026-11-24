@@ -90,6 +90,8 @@ const els = {
   centerClock: document.getElementById('center-clock'),
   centerCurrent: document.getElementById('center-current'),
   centerRemaining: document.getElementById('center-remaining'),
+  centerNext: document.getElementById('center-next'),
+  wheelCenterInfo: document.getElementById('wheel-center-info'),
   currentTitleSide: document.getElementById('current-title-side'),
   currentRemainingLabel: document.getElementById('current-remaining-label'),
   currentRemainingTime: document.getElementById('current-remaining-time'),
@@ -109,6 +111,15 @@ let regieIdleTimer = null;
 function setCurrentMeta(label, time) {
   if (els.currentRemainingLabel) els.currentRemainingLabel.textContent = label || '';
   if (els.currentRemainingTime) els.currentRemainingTime.textContent = time || '';
+}
+
+function setCenterNext(title) {
+  if (!els.centerNext) return;
+  const s = settingsUi.get();
+  const enabled = s.wheelNextTitleEnabled !== false;
+  const text = enabled ? String(title || '').trim() : '';
+  els.centerNext.textContent = text;
+  els.centerNext.hidden = !text;
 }
 
 function setNextMeta(label, time) {
@@ -481,7 +492,14 @@ function pushWebState(extra = {}) {
       wheelColorMode: settings.wheelColorMode || 'section',
       duoColorA: settings.duoColorA,
       duoColorB: settings.duoColorB,
-      wheelLabelScale: settings.wheelLabelScale || 1,
+      wheelLabelScale: settings.wheelLabelScale || 1.2,
+      timelineTitleScale: settings.timelineTitleScale || 1.2,
+      secondsScale: settings.secondsScale || 1.75,
+      wheelNextTitleEnabled: settings.wheelNextTitleEnabled !== false,
+      wheelNextTitleColor: settings.wheelNextTitleColor || '#f0b429',
+      wheelNextTitleScale: Number(settings.wheelNextTitleScale) || 1,
+      wheelRemainingScale: Number(settings.wheelRemainingScale) || 1,
+      wheelRemainingPosition: settings.wheelRemainingPosition === 'top' ? 'top' : 'bottom',
       showWheelTicks: settings.showWheelTicks !== false,
       showWheelMinuteLabels: settings.showWheelMinuteLabels !== false,
       secondsBlinkEnabled: settings.secondsBlinkEnabled !== false,
@@ -1002,6 +1020,7 @@ function tick() {
     els.centerRemaining.textContent = manual?.running
       ? 'handmatige klok loopt'
       : 'wacht op start (OSC of Start-knop boven)';
+    setCenterNext(next?.title || '');
     els.secondsDigital.textContent = phases.elapsedLabel();
     els.secondsDigital.classList.remove('hot', 'blink');
     els.currentTitleSide.textContent = current ? current.title : '—';
@@ -1052,6 +1071,7 @@ function tick() {
     els.centerClock.textContent = formatClock(Date.now());
     els.centerCurrent.textContent = 'Wedstrijd loopt';
     els.centerRemaining.textContent = 'geen aftelklok';
+    setCenterNext(matchNext?.title || '');
     els.secondsDigital.textContent = '—';
     els.secondsDigital.classList.remove('hot', 'blink');
     els.currentTitleSide.textContent = 'Live';
@@ -1108,6 +1128,7 @@ function tick() {
     : snap.next
       ? `Volgende: ${snap.next.title}`
       : '—';
+  setCenterNext(snap.next?.title || '');
 
   if (snap.current && snap.currentRemainingSeconds != null) {
     const left = formatDuration(snap.currentRemainingSeconds);

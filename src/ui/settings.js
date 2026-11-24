@@ -19,6 +19,7 @@ const TOGGLE_MAP = [
   ['setting-show-wheel-ticks', 'showWheelTicks'],
   ['setting-show-wheel-minute-labels', 'showWheelMinuteLabels'],
   ['setting-blink-enabled', 'secondsBlinkEnabled'],
+  ['setting-wheel-next-title-enabled', 'wheelNextTitleEnabled'],
   ['setting-cue-alert', 'cueAlertEnabled'],
   ['setting-cue-sound', 'cueAlertSound'],
   ['setting-cue-flash', 'cueAlertFlash'],
@@ -66,7 +67,20 @@ export function createSettingsController({ onChange, getExportContext } = {}) {
     setValue('setting-duo-a', settings.duoColorA);
     setValue('setting-duo-b', settings.duoColorB);
     setValue('setting-label-scale', String(settings.wheelLabelScale));
-    setLabelScaleReadout(settings.wheelLabelScale);
+    setScaleReadout('setting-label-scale-value', settings.wheelLabelScale);
+    setValue('setting-timeline-title-scale', String(settings.timelineTitleScale ?? 1.2));
+    setScaleReadout('setting-timeline-title-scale-value', settings.timelineTitleScale ?? 1.2);
+    setValue('setting-seconds-scale', String(settings.secondsScale ?? 1.75));
+    setScaleReadout('setting-seconds-scale-value', settings.secondsScale ?? 1.75);
+    setValue('setting-wheel-next-title-scale', String(settings.wheelNextTitleScale ?? 1));
+    setScaleReadout('setting-wheel-next-title-scale-value', settings.wheelNextTitleScale ?? 1);
+    setValue('setting-wheel-next-title-color', settings.wheelNextTitleColor || '#f0b429');
+    setValue('setting-wheel-remaining-scale', String(settings.wheelRemainingScale ?? 1));
+    setScaleReadout('setting-wheel-remaining-scale-value', settings.wheelRemainingScale ?? 1);
+    setValue(
+      'setting-wheel-remaining-position',
+      settings.wheelRemainingPosition === 'top' ? 'top' : 'bottom'
+    );
     setValue('setting-blink-within', String(settings.secondsBlinkWithin));
     setValue('setting-window-minutes', String(settings.windowMinutes || 60));
     setValue('setting-rundown-mode', settings.rundownMode || 'fixed');
@@ -223,9 +237,30 @@ export function createSettingsController({ onChange, getExportContext } = {}) {
     if (row) row.hidden = !settings.secondsBlinkEnabled;
   }
 
-  function setLabelScaleReadout(v) {
-    const el = document.getElementById('setting-label-scale-value');
+  function setScaleReadout(id, v) {
+    const el = document.getElementById(id);
     if (el) el.textContent = `${Number(v).toFixed(2)}×`;
+  }
+
+  function applyTypeScales(s = settings) {
+    const root = document.getElementById('app') || document.documentElement;
+    const secondsScale = Number(s.secondsScale) || 1.75;
+    const timelineTitleScale = Number(s.timelineTitleScale) || 1.2;
+    const nextScale = Number(s.wheelNextTitleScale) || 1;
+    const nextColor = s.wheelNextTitleColor || '#f0b429';
+    const remainingScale = Number(s.wheelRemainingScale) || 1;
+    const remainingPos = s.wheelRemainingPosition === 'top' ? 'top' : 'bottom';
+    root.style.setProperty('--seconds-scale', String(secondsScale));
+    root.style.setProperty('--timeline-title-scale', String(timelineTitleScale));
+    document.querySelectorAll('.seconds-panel').forEach((el) => {
+      el.style.setProperty('--seconds-scale', String(secondsScale));
+    });
+    document.querySelectorAll('.wheel-center-info').forEach((el) => {
+      el.style.setProperty('--wheel-next-scale', String(nextScale));
+      el.style.setProperty('--wheel-next-color', nextColor);
+      el.style.setProperty('--wheel-remaining-scale', String(remainingScale));
+      el.dataset.remainingPos = remainingPos;
+    });
   }
 
   function patch(partial) {
@@ -299,6 +334,7 @@ export function createSettingsController({ onChange, getExportContext } = {}) {
     app?.classList.toggle('rundown-flex', flex);
     app?.classList.toggle('rundown-fixed', !flex);
     app?.classList.toggle('regie-hide-timeline', Boolean(s.regieHideTimeline));
+    applyTypeScales(s);
   }
 
   // Frontend × buttons — hide panel; re-enable via settings toggles
@@ -332,8 +368,35 @@ export function createSettingsController({ onChange, getExportContext } = {}) {
   });
   document.getElementById('setting-label-scale')?.addEventListener('input', (e) => {
     const v = Number(e.target.value);
-    setLabelScaleReadout(v);
+    setScaleReadout('setting-label-scale-value', v);
     patch({ wheelLabelScale: v });
+  });
+  document.getElementById('setting-timeline-title-scale')?.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    setScaleReadout('setting-timeline-title-scale-value', v);
+    patch({ timelineTitleScale: v });
+  });
+  document.getElementById('setting-seconds-scale')?.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    setScaleReadout('setting-seconds-scale-value', v);
+    patch({ secondsScale: v });
+    window.dispatchEvent(new Event('resize'));
+  });
+  document.getElementById('setting-wheel-next-title-scale')?.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    setScaleReadout('setting-wheel-next-title-scale-value', v);
+    patch({ wheelNextTitleScale: v });
+  });
+  document.getElementById('setting-wheel-next-title-color')?.addEventListener('input', (e) => {
+    patch({ wheelNextTitleColor: e.target.value || '#f0b429' });
+  });
+  document.getElementById('setting-wheel-remaining-scale')?.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    setScaleReadout('setting-wheel-remaining-scale-value', v);
+    patch({ wheelRemainingScale: v });
+  });
+  document.getElementById('setting-wheel-remaining-position')?.addEventListener('change', (e) => {
+    patch({ wheelRemainingPosition: e.target.value === 'top' ? 'top' : 'bottom' });
   });
   document.getElementById('setting-blink-within')?.addEventListener('change', (e) => {
     const v = Math.min(60, Math.max(1, Number(e.target.value) || 15));

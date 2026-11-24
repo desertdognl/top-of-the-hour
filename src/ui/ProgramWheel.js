@@ -252,16 +252,16 @@ const MIN_SEG_MS = 90 * 1000;
 function labelSizeForMinutes(minutesAhead, labelScale, dpr) {
   const scale = labelScale || 1;
   if (minutesAhead < 0) {
-    return Math.round(10 * scale * dpr);
+    return Math.round(12 * scale * dpr);
   }
   if (minutesAhead > 30) {
-    return Math.round(10 * scale * dpr);
+    return Math.round(12 * scale * dpr);
   }
-  // 30 → 0 maps to 12 → 17; boost under 15m so near items don't look tiny
+  // 30 → 0 maps to 14 → 21; boost under 15m so near items don't look tiny
   const t = 1 - minutesAhead / 30;
-  let px = 12 + t * 5;
-  if (minutesAhead <= 15) px = Math.max(px, 15);
-  if (minutesAhead <= 10) px = Math.max(px, 16);
+  let px = 14 + t * 7;
+  if (minutesAhead <= 15) px = Math.max(px, 18);
+  if (minutesAhead <= 10) px = Math.max(px, 20);
   return Math.round(px * scale * dpr);
 }
 

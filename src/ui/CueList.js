@@ -144,12 +144,18 @@ export function createCueList(root, { onToggleLock } = {}) {
       }
     }
 
-    // Huidige cue als 2e zichtbare rij (één item erboven), zodat context + now zichtbaar zijn
+    // Altijd vorige + huidige in beeld (huidige als 2e rij wanneer beide passen)
     const focusId = currentId || nextId;
-    if (focusId && focusId !== lastScrollId) {
+    if (focusId) {
       const node = root.querySelector(`[data-id="${CSS.escape(focusId)}"]`);
       if (node) {
-        scrollCueSecondFromTop(root, node);
+        const force = focusId !== lastScrollId;
+        if (force || !arePrevAndCurrentVisible(root, node)) {
+          // Na DOM-rebuild eerst layout laten settelen
+          requestAnimationFrame(() => {
+            ensurePrevAndCurrentVisible(root, node, { smooth: force });
+          });
+        }
         lastScrollId = focusId;
       }
     }
@@ -159,20 +165,58 @@ export function createCueList(root, { onToggleLock } = {}) {
     render,
     invalidate() {
       lastStructure = '';
+      lastScrollId = null;
     },
   };
 }
 
-/** Scroll so `node` sits as the 2nd visible row (previous sibling at top). */
-function scrollCueSecondFromTop(root, node) {
-  const prev = node.previousElementSibling;
-  const anchor = prev && root.contains(prev) ? prev : node;
-  const topPad = 4;
-  const target = Math.max(0, anchor.offsetTop - topPad);
+function contentOffsetTop(root, el) {
+  const er = el.getBoundingClientRect();
+  const rr = root.getBoundingClientRect();
+  return er.top - rr.top + root.scrollTop;
+}
+
+function arePrevAndCurrentVisible(root, currentNode) {
+  if (!root?.clientHeight) return true;
+  const prev =
+    currentNode.previousElementSibling && root.contains(currentNode.previousElementSibling)
+      ? currentNode.previousElementSibling
+      : null;
+  const pad = 4;
+  const topNode = prev || currentNode;
+  const topY = contentOffsetTop(root, topNode);
+  const bottomY = contentOffsetTop(root, currentNode) + currentNode.offsetHeight;
+  const viewTop = root.scrollTop + pad;
+  const viewBottom = root.scrollTop + root.clientHeight - pad;
+  return topY >= viewTop - 1 && bottomY <= viewBottom + 1;
+}
+
+/**
+ * Houd vorige + huidige zichtbaar. Past beide → vorige bovenaan.
+ * Past niet → huidige volledig in beeld (zoveel mogelijk van vorige mee).
+ */
+function ensurePrevAndCurrentVisible(root, currentNode, { smooth = true } = {}) {
+  if (!root || !currentNode) return;
+  const prev =
+    currentNode.previousElementSibling && root.contains(currentNode.previousElementSibling)
+      ? currentNode.previousElementSibling
+      : null;
+  const pad = 4;
   const maxScroll = Math.max(0, root.scrollHeight - root.clientHeight);
-  const nextTop = Math.min(target, maxScroll);
+  const topNode = prev || currentNode;
+  const topY = contentOffsetTop(root, topNode) - pad;
+  const curBottom = contentOffsetTop(root, currentNode) + currentNode.offsetHeight + pad;
+  const span = curBottom - topY;
+
+  let nextTop;
+  if (span <= root.clientHeight) {
+    nextTop = topY;
+  } else {
+    nextTop = curBottom - root.clientHeight;
+  }
+  nextTop = Math.max(0, Math.min(nextTop, maxScroll));
   if (Math.abs(root.scrollTop - nextTop) < 2) return;
-  root.scrollTo({ top: nextTop, behavior: 'smooth' });
+  root.scrollTo({ top: nextTop, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 function applyTimeLabel(timeEl, cue, effectiveMs) {

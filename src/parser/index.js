@@ -3,9 +3,11 @@ const path = require('path');
 const { extractDocxRows } = require('./docx');
 const { extractPdfRows } = require('./pdf');
 const { rowsToCues } = require('./cues');
+const { detectFormat } = require('./detect');
 
 /**
- * Parse a speakerformat file (DOCX or PDF) into cues + meta.
+ * Parse a speakerformat / run-of-show file (DOCX or PDF) into cues + meta.
+ * Format (FCU t− vs absolute Start/Duur) wordt automatisch gedetecteerd.
  */
 async function parseSpeakerFile(filePath, options = {}) {
   const ext = path.extname(filePath).toLowerCase();
@@ -37,4 +39,5 @@ module.exports = {
   parseSpeakerFile,
   parseSpeakerFileAsync: parseSpeakerFile,
   rowsToCues,
+  detectFormat,
 };

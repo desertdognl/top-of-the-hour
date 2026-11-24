@@ -162,5 +162,57 @@ test('+1 cue uses gap to next unlocked', () => {
   assert.strictEqual(delta, 8000); // 9000 − 1000 (skips locked for index among unlocked)
 });
 
+const { detectFormat } = require('../src/parser/detect');
+const { parseAbsoluteRow, parseDurationSeconds } = require('../src/parser/absolute');
+const { rowsToCues } = require('../src/parser/cues');
+
+console.log('format detect + absolute');
+test('detect FCU from t− header sample', () => {
+  const rows = [
+    ['T-MINUS', 'TIJD', 'SCHERMEN', 'SPEAKER'],
+    ['1h 30m', '17:15', 'Opening', ''],
+    ['0h 0m', '18:45', 'Aftrap', ''],
+  ];
+  assert.strictEqual(detectFormat(rows).format, 'fcu');
+});
+test('detect absolute from Start/Duur ROS sample', () => {
+  const rows = [
+    ['Run-of-Show IDEA Talentboost'],
+    ['ID Start Duur Wat', 'Audio', 'Scherm'],
+    ['3 09:30:00 00:04:00 Welkom', 'mic 2', 'PPT 1'],
+    ['4 09:34:00 00:00:10 Opkomst', 'touche', 'PPT 1'],
+    ['5 09:34:10 00:02:00 Intro', 'mic 1', 'PPT 1'],
+  ];
+  assert.strictEqual(detectFormat(rows).format, 'absolute');
+});
+test('parseAbsoluteRow packed ID start duur', () => {
+  const p = parseAbsoluteRow(['3 09:30:00 00:04:00 Begüm, Lieve, Sanne:', 'mic 2: Sanne', 'PPT 1']);
+  assert.ok(p);
+  assert.strictEqual(p.start.hours, 9);
+  assert.strictEqual(p.start.minutes, 30);
+  assert.strictEqual(p.durationSec, 4 * 60);
+  assert.ok(/Begüm/.test(p.what));
+  assert.ok(!/PPT/.test(p.what));
+});
+test('parseDurationSeconds 00:15:00', () => {
+  assert.strictEqual(parseDurationSeconds('00:15:00'), 15 * 60);
+});
+test('absolute rowsToCues yields timed wall-clock cues', () => {
+  const { cues, meta } = rowsToCues(
+    [
+      ['Run-of-Show Demo Event'],
+      ['ID Start Duur Wat', 'Audio', 'Scherm'],
+      ['1 10:00:00 00:05:00 Opening', 'playlist', 'PPT 1'],
+      ['2 10:05:00 00:10:00 Keynote', 'mic 1', 'PPT 2'],
+    ],
+    { referenceDate: new Date('2026-11-24T12:00:00') }
+  );
+  assert.strictEqual(meta.format, 'absolute');
+  const timed = cues.filter((c) => c.atMs != null);
+  assert.strictEqual(timed.length, 2);
+  assert.strictEqual(timed[0].clockText, '10:00');
+  assert.strictEqual(timed[1].clockText, '10:05');
+});
+
 console.log(`\n${passed} assertions ok`);
 process.exit(process.exitCode || 0);
